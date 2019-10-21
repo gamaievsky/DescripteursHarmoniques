@@ -404,6 +404,7 @@ class Accord(ListeAccords):
        n = self.nombreDeNotes
        self.dissonance = self.dissonance/(self.nombreDeNotes*(self.nombreDeNotes - 1)/2)
 
+
   def Tension(self):
 
        for i, pitch1 in enumerate(self.listeHauteursAvecMultiplicite):
@@ -420,7 +421,12 @@ class Accord(ListeAccords):
                                    Y = abs(y)
                                    Z = abs(z)
                                    a = 0.6
-                                   self.tension = self.tension = self.tension + (self.amplitudes[k1-1] * self.amplitudes[k2-1] * self.amplitudes[k3-1]) * max(np.exp(-(12*(X-Y)/a)**2) , np.exp(-(12*(Y-Z)/a)**2) , np.exp(-(12*(X-Z)/a)**2))
+                                   diff = [abs(X-Y), abs(X-Z), abs(Y-Z)]
+                                   diff.remove(max(diff))
+                                   contrib = abs(diff[1]-diff[0])
+                                   self.tension = self.tension + (self.amplitudes[k1-1] * self.amplitudes[k2-1] * self.amplitudes[k3-1]) * (np.exp(-(12*(contrib)/a)**2))
+
+                                   #self.tension = self.tension + (self.amplitudes[k1-1] * self.amplitudes[k2-1] * self.amplitudes[k3-1]) * max(np.exp(-(12*(X-Y)/a)**2) , np.exp(-(12*(Y-Z)/a)**2) , np.exp(-(12*(X-Z)/a)**2))
 
        n = self.nombreDeNotes
        self.tension = self.tension/(self.nombreDeNotes*(self.nombreDeNotes - 1)*(self.nombreDeNotes - 2)/6)
@@ -498,8 +504,6 @@ class Accord(ListeAccords):
           self.produitConcTot = np.sum(self.spectreConcordanceTot * spectreConcTotPrec)**(2/(self.nombreDeNotes * nbrNotesPrec))
 
 
-
-
   def BaryConcordanceTot(self):
       self.baryConcTot = np.sum(self.spectreConcordanceTot * np.arange(0,16,0.001)) / (self.concordanceTotale ** (self.nombreDeNotes/2))
 
@@ -513,15 +517,15 @@ class Accord(ListeAccords):
 
 
 
-title = 'Cadence4Vmin'
+title = 'SuiteAccords'
 # Palestrina, AccordsMajeurs, AccordsMineur, Majeur3et4notes, Majeur3et4notes, Accords3Notes, DispoMajeurMineur, Tension
-# Cadence3V, Cadence4VMaj, Cadence4Vmin
-score = converter.parse('/Users/manuel/Dropbox (TMG)/Thèse/code/DescripteursHarmoniques/'+title+'.musicxml')
+# Cadence3V, Cadence4VMaj, Cadence4Vmin, SuiteAccords
+score = converter.parse('/Users/manuel/Github/DescripteursHarmoniques/'+title+'.musicxml')
 
 l = ListeAccords(score)
 l.ConcordanceCoherenceConcordanceOrdre3Liste()
 # Afficher : Concordance, Dissonance, Tension, ConcordanceOrdre3, ConcordanceTotale, ProduitConc, ProduitConcTot,
 #            BaryConc, BaryConcTot, DifBaryConc, DifBaryConcTot
-#l.getAnnotatedStream(['Dissonance'])
-#l.stream.show()
-l.Representation(['concordance','baryConc'], 'r', True)
+l.getAnnotatedStream(['Dissonance'])
+l.stream.show()
+#l.Representation(['concordance','dissonance'], 'r', False)
