@@ -413,7 +413,7 @@ class Accord(ListeAccords):
 
 
 
-score = converter.parse('/Users/manuel/Github/DescripteursHarmoniques/AccordsMineur.musicxml')
+score = converter.parse('/Users/manuel/Github/DescripteursHarmoniques/Exemples/SuiteAccords.musicxml')
 #score = converter.parse('/Users/manuel/Dropbox (TMG)/Thèse/Disposition/AccordsMineur.musicxml')
 #score = converter.parse('/Users/manuel/Dropbox (TMG)/Thèse/Disposition/Majeur3et4notes.musicxml')
 #score = converter.parse('/Users/manuel/Dropbox (TMG)/Thèse/Disposition/Mineur3et4notes.musicxml')
