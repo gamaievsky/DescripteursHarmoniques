@@ -30,6 +30,11 @@ norm_harmChange = 'None' # 'None', 'frame_by_frame', 'general'
 norm_diffConc = 'energy' # 'energy', 'energy + conc', 'first'
 norm_harm = 2 # La puissance dans le calcul de l'harmonicité. 1 : amplitude, 2 : énergie
 
+## CONTEXTE ET MEMOIRE
+memory_size = 1 # "full", int # entier n>=1, auquel cas la mémoire ne dure que n+1 accords
+memory_type = 'mean' #'max','mean'
+memory_decr_ponderation = 1
+norm_Novelty = 'energy' # 'None', 'energy'
 
 # AFFICHAGE
 plot_score = False
