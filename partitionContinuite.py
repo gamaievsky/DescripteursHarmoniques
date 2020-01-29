@@ -135,7 +135,7 @@ class ListeAccords:
                 v.DiffRoughness(Prec)
 
                 if v.nombreDeNotes>=3:
-                    v.Tension()
+                    v.ConcordanceOrdre3()
                     v.SpectreConcordanceTot()
                     v.ConcordanceTotale()
                     v.CrossConcordanceTot(Prec)
@@ -659,9 +659,26 @@ for ind in range(N):
     l.HarmonicDescriptors()
     Points.append(l.Points(space))
 
-Points = np.asarray(Points)
-print(Points.shape)
+def Normalise(points, type = 'by timbre'):
+    if type == 'by timbre':
+        max = np.amax(points, axis = (0,2))
+        for descr in range(Points.shape[1]):
+            Points[:,descr,:] /= max[descr]
+    elif type == 'by curve':
+        max = np.amax(points, axis = 2)
+        for timbre in range(Points.shape[0]):
+            for descr in range(Points.shape[1]):
+                Points[timbre,descr,:] /= max[timbre,descr]
+    return points
 
+
+Points = np.asarray(Points)
+Points = Normalise(Points, type = 'by curve')
+# print(np.amax(Points, axis = 2).shape)
+print(Points.shape)
+print(Points)
+
+Affichage(points, )
 
 
 # l.Classement('concordance')
