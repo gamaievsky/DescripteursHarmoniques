@@ -2,14 +2,18 @@
 # SPECTRE
 mode = 'auto' #manual
 
-K = 11
-decr = 1
+# timbre[i] = (K, decr, sig)
+timbres = {}
+timbres[0] = (11,1/2,0.01)
+timbres[1] = (11,1,0.01)
+timbres[2] = (11,2,0.01)
 
-sig = 0.01
+
+
 noteDeReferencePourLeTunning = "C4"
 
-partiels = [1,2,3,4,5,6,7,8,9,10,11]
-amplitudes = [1, 1/2, 1/3, 1/4, 1/5, 1/6, 1/7, 1/8, 1/9, 1/10, 1/11]
+# partiels = [1,2,3,4,5,6,7,8,9,10,11]
+# amplitudes = [1, 1/2, 1/3, 1/4, 1/5, 1/6, 1/7, 1/8, 1/9, 1/10, 1/11]
 
 
 #PARAMETRES DES DESCRIPTEURS
@@ -29,6 +33,9 @@ type_harmChange = 'absolute' # 'absolute', 'relative'
 norm_harmChange = 'None' # 'None', 'frame_by_frame', 'general'
 norm_diffConc = 'energy' # 'energy', 'energy + conc', 'first'
 norm_harm = 2 # La puissance dans le calcul de l'harmonicité. 1 : amplitude, 2 : énergie
+norm_diffConcContext = 'energy'
+type_diffDiss = 'produit'
+type_harmNov = 'dyn' #'dyn', 'stat'
 
 ## CONTEXTE ET MEMOIRE
 memory_size = 1 # "full", int # entier n>=1, auquel cas la mémoire ne dure que n+1 accords
@@ -40,7 +47,7 @@ norm_Novelty = 'energy' # 'None', 'energy'
 plot_score = False
 plot_class = False
 plot_descr = True
-plot_abstr = False
+plot_abstr = True
 
 aff_score = False
 link = True

@@ -35,21 +35,25 @@ class ListeAccords:
     '''
 
 
-    def __init__(self, stream):
+    def __init__(self, stream, ind = 0):
 
         self.stream = stream
         self.tree = tree.fromStream.asTimespans(stream, flatten=True,classList=(note.Note, chord.Chord))
         if parametres.mode=='manual':
             self.partiels = parametres.partiels
             self.amplitudes = parametres.amplitudes
+            self.sig = parametres.sig
         else:
             self.partiels = []
             self.amplitudes = []
-            for i in range(parametres.K):
+            K = parametres.timbres[ind][0]
+            decr = parametres.timbres[ind][1]
+            self.sig = parametres.timbres[ind][2]
+            for i in range(K):
                 self.partiels.append(i+1)
-                self.amplitudes.append(1/(i+1)**parametres.decr)
+                self.amplitudes.append(1/(i+1)**decr)
 
-        self.sig = parametres.sig
+
         self.temperament = tunings.Equal
                             #[0,0,0,0,0,0,0,0,0,0,0,0]#Tempere#
                             #[0,-10,+4,-6,+8,-2,-12,+2,-8,+6,-4,+10]#Pythagore
@@ -107,7 +111,6 @@ class ListeAccords:
 
         self.EnergyUniss()
         Prec = 0
-        Cont = 0
 
         for verticality in self.tree.iterateVerticalities():
             v = Accord(verticality, self.partiels, self.amplitudes, self.sig, self.energyUniss, self.temperament,self.noteDeReferencePourLeTunning)
@@ -124,22 +127,20 @@ class ListeAccords:
                 v.Roughness()
                 v.SpectreConcordance()
                 v.Concordance()
-                v.BaryConcordance()
                 v.CrossConcordance(Prec)
                 v.HarmonicChange(Prec)
+                v.HarmonicNovelty(Prec)
                 v.DiffConcordance(Prec)
-                v.DifBaryConc(Prec)
+                v.DiffConcordanceContext(Prec)
+                v.DiffRoughness(Prec)
 
                 if v.nombreDeNotes>=3:
                     v.Tension()
                     v.SpectreConcordanceTot()
                     v.ConcordanceTotale()
                     v.CrossConcordanceTot(Prec)
-                    v.BaryConcordanceTot()
-                    v.DifBaryConcTot(Prec)
 
             Prec = v
-            Cont = v.context
             self.grandeursHarmoniques.append(v)
 
 
@@ -178,7 +179,8 @@ class ListeAccords:
     def Liste(self, axe = 'concordance'):
         liste = []
         for accord in self.grandeursHarmoniques:
-            liste.append(getattr(accord, axe))
+            if isinstance(getattr(accord, axe),str): pass
+            else: liste.append(getattr(accord, axe))
         return liste
 
 
@@ -197,6 +199,20 @@ class ListeAccords:
       s[0].addLyric(descr[0].upper() + descr[1:] + ' triée')
       s.show()
       del s[0].lyrics[1]
+
+    '''Fonction qui regroupe dans un tableau de dimension d*T ou d*(T-1) les valeurs des d descripteurs sur une séquence de T accords
+    '''
+    def Points(self,space):
+        d = len(space)
+        L = []
+        for descr in space:
+            L.append(self.Liste(descr))
+        T = min(map(len,L))
+        for i in range(d):
+            if len(L[i])>T: L[i].pop(0)
+
+        Points = np.asarray(L)
+        return Points
 
 
     def TemporalRepresentation(self, space):
@@ -245,13 +261,19 @@ class ListeAccords:
             color = parametres.color_abstr
             l1 = self.Liste(space[0])
             l2 = self.Liste(space[1])
+
+
+            #Si un descripteur statique et un descripteur dynamique
+            if len(l1)<len(l2) : l2.pop(0)
+            elif len(l1)>len(l2) : l1.pop(0)
+
             fig, ax = plt.subplots()
             if parametres.link: plt.plot(l1, l2, color+'--')
             plt.plot(l1, l2, color+'o')
             for i in range(len(l1)):
-                ax.annotate(i+1, (l1[i], l2[i]))
-            plt.xlabel(space[0])
-            plt.ylabel(space[1])
+                ax.annotate(' {}'.format(i+1), (l1[i], l2[i]))
+            plt.xlabel(space[0][0].upper() + space[0][1:])
+            plt.ylabel(space[1][0].upper() + space[1][1:])
             plt.title(title)
             plt.show()
         else:
@@ -326,8 +348,15 @@ class Accord(ListeAccords):
         self.difBaryConcTot = 0
         self.spectreAccord = 0
         self.context = 0
+        self.energyContext = 0
         self.harmonicChange = 0
         self.diffConcordance = 0
+        self.diffConcordanceContext = 0
+        self.diffRoughness = 0
+        self.spectreHarmonicNovelty = 0
+        self.harmonicNovelty = 0
+
+
 
 
 
@@ -369,8 +398,9 @@ class Accord(ListeAccords):
                  if (i<j):
                      for k1 in range(1,len(self.partiels) + 1):
                          for k2 in range(1,len(self.partiels) + 1):
-                             fmin = min(self.partiels[k2-1] * self.frequenceAvecTemperament(pitch2), self.partiels[k1-1] * self.frequenceAvecTemperament(pitch1))
-                             fmax = max(self.partiels[k2-1] * self.frequenceAvecTemperament(pitch2), self.partiels[k1-1] * self.frequenceAvecTemperament(pitch1))
+                             freq = [self.partiels[k2-1] * self.frequenceAvecTemperament(pitch2), self.partiels[k1-1] * self.frequenceAvecTemperament(pitch1)]
+                             freq.sort()
+                             fmin, fmax = freq[0], freq[1]
                              s = 0.44*(np.log(parametres.β2/parametres.β1)/(parametres.β2-parametres.β1))*(fmax-fmin)/(fmin**(0.477))
                              diss = np.exp(-parametres.β1*s)-np.exp(-parametres.β2*s)
                              if parametres.type_diss=='produit':
@@ -380,7 +410,7 @@ class Accord(ListeAccords):
 
          if parametres.norm_diss:
              if parametres.type_diss=='produit':
-                 self.roughness = self.roughness/self.energyUniss[0]
+                 self.roughness = self.roughness/self.energy
              elif parametres.type_diss == 'minimum':
                  self.roughness = self.roughness/np.sqrt(self.energyUniss[0])
 
@@ -508,6 +538,7 @@ class Accord(ListeAccords):
             self.spectreAccord= self.spectreAccord + self.spectre(self.frequenceAvecTemperament(pitch))
         self.energy = sum(self.spectreAccord * self.spectreAccord)
 
+
     def Context(self):
         mem = parametres.memory_size
 
@@ -521,7 +552,7 @@ class Accord(ListeAccords):
                     self.context = np.average(np.asarray(listeSpectresAccords), axis=0, weights=[weights[l-1-i] for i in range(l)])
                 else:
                     self.context = np.average(np.asarray(listeSpectresAccords)[(l-1-mem):,:], axis=0, weights=[weights[mem-i] for i in range(mem+1)])
-
+        self.energyContext = sum(self.spectreAccord * self.spectreAccord)
 
 
     def HarmonicChange(self,Prec):
@@ -545,11 +576,60 @@ class Accord(ListeAccords):
             for i, pitch1 in enumerate(self.listeHauteursAvecMultiplicite):
                 for j, pitch2 in enumerate(Prec.listeHauteursAvecMultiplicite):
                     if parametres.norm_diffConc=='energy':
-                        self.diffConcordance = self.diffConcordance + np.divide(np.sum(self.spectre(self.frequenceAvecTemperament(pitch1))*self.spectre(self.frequenceAvecTemperament(pitch2))), np.sqrt(self.energy * Prec.energy))
+                        self.diffConcordance = self.diffConcordance + np.divide(np.sum(self.spectre(self.frequenceAvecTemperament(pitch1))*self.spectre(self.frequenceAvecTemperament(pitch2))), np.sqrt(self.energy * Prec.energyContext))
                     if parametres.norm_diffConc=='energy + conc':
-                        self.diffConcordance = self.diffConcordance + np.divide(np.sum(self.spectre(self.frequenceAvecTemperament(pitch1))*self.spectre(self.frequenceAvecTemperament(pitch2))), np.sqrt(self.energy * Prec.energy)* self.concordance*Prec.concordance)
+                        self.diffConcordance = self.diffConcordance + np.divide(np.sum(self.spectre(self.frequenceAvecTemperament(pitch1))*self.spectre(self.frequenceAvecTemperament(pitch2))), np.sqrt(self.energy * Prec.energyC)* self.concordance*Prec.concordance)
                     if parametres.norm_diffConc=='first':
                         self.diffConcordance = self.diffConcordance + np.divide(np.sum(self.spectre(self.frequenceAvecTemperament(pitch1))*self.spectre(self.frequenceAvecTemperament(pitch2))), np.sqrt(self.energy * Prec.energy)* Prec.concordance)
+
+
+    def DiffConcordanceContext(self,Prec):
+        if type(Prec) is int:
+            self.diffConcordanceContext = ""
+        else:
+            if parametres.norm_diffConcContext=='energy':
+                self.diffConcordanceContext = np.divide(np.sum(self.spectreAccord*Prec.context), np.sqrt(self.energy * Prec.energy))
+
+    def DiffRoughness(self,Prec):
+        if type(Prec) is int:
+            self.diffRoughness = ""
+        else:
+            for i, pitch1 in enumerate(self.listeHauteursAvecMultiplicite):
+                for j, pitch2 in enumerate(Prec.listeHauteursAvecMultiplicite):
+                    for k1 in range(1,len(self.partiels) + 1):
+                        for k2 in range(1,len(Prec.partiels) + 1):
+                            freq = [Prec.partiels[k2-1] * self.frequenceAvecTemperament(pitch2), self.partiels[k1-1] * self.frequenceAvecTemperament(pitch1)]
+                            freq.sort()
+                            fmin, fmax = freq[0], freq[1]
+                            s = 0.44*(np.log(parametres.β2/parametres.β1)/(parametres.β2-parametres.β1))*(fmax-fmin)/(fmin**(0.477))
+                            diss = np.exp(-parametres.β1*s)-np.exp(-parametres.β2*s)
+                            if parametres.type_diffDiss=='produit':
+                                self.diffRoughness = self.diffRoughness + (self.amplitudes[k1-1] * Prec.amplitudes[k2-1]) * diss
+
+            if parametres.type_diffDiss=='produit':
+                self.diffRoughness = self.diffRoughness/np.sqrt(self.energy * Prec.energy)
+
+            n = self.nombreDeNotes
+            self.diffRoughness = self.diffRoughness/(n*(n - 1)/2)
+
+    def HarmonicNovelty(self,Prec):
+        #Construction de spectreHarmonicNovelty
+        if type(Prec) is int:
+            if parametres.type_harmNov == 'dyn':
+                self.harmonicNovelty = ""
+            else:
+                self.spectreHarmonicNovelty = self.spectreAccord
+                self.harmonicNovelty = np.divide(np.sum(self.spectreHarmonicNovelty * self.spectreHarmonicNovelty), self.energy)
+        else:
+            #Construction de spectreHarmonicNovelty
+            self.spectreHarmonicNovelty = self.spectreAccord - Prec.context
+            for i in range(len(self.spectreAccord)):
+                if self.spectreHarmonicNovelty[i] < 0:
+                    self.spectreHarmonicNovelty[i]=0
+
+            #Calcul de harmonicNovelty
+            self.harmonicNovelty = np.divide(np.sum(self.spectreHarmonicNovelty * self.spectreHarmonicNovelty), self.energy)
+
 
 
 
@@ -564,12 +644,27 @@ title = 'CadenceM2'
 # Cadence3V, Cadence4VMaj, Cadence4Vmin, SuiteAccords
 score = converter.parse('/Users/manuel/Github/DescripteursHarmoniques/ExemplesMusicaux/'+title+'.musicxml')
 #score = converter.parse('/Users/manuel/Github/DescripteursHarmoniques/Exemples/AccordsMineur.musicxml')
-l = ListeAccords(score)
-l.HarmonicDescriptors()
+
 # Afficher : Concordance, Roughness, Tension, ConcordanceOrdre3, ConcordanceTotale, crossConcordance, crossConcordanceTot,
 #            BaryConc, BaryConcTot, DifBaryConc, DifBaryConcTot
-space = ['harmonicChange','concordance']
+spaceStat = ['roughness','concordance','concordanceOrdre3','concordanceTotale']
+spaceDyn = ['harmonicChange','harmonicNovelty','diffRoughness','diffConcordance','diffConcordanceContext']
+space = spaceStat + spaceDyn
+
+N = len(parametres.timbres)
+Points = []
+
+for ind in range(N):
+    l = ListeAccords(score, ind = 1)
+    l.HarmonicDescriptors()
+    Points.append(l.Points(space))
+
+Points = np.asarray(Points)
+print(Points.shape)
+
+
+
 # l.Classement('concordance')
 # l.getAnnotatedStream(['concordance'])
 # l.stream.show()
-l.Affichage(space)
+# l.Affichage(space)
