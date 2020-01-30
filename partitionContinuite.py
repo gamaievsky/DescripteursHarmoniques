@@ -10,6 +10,7 @@ respectives
 
 import numpy as np
 import matplotlib.pyplot as plt
+import pandas as pd
 from mpl_toolkits.mplot3d import Axes3D
 from scipy import interpolate
 from operator import itemgetter, attrgetter
@@ -649,36 +650,102 @@ score = converter.parse('/Users/manuel/Github/DescripteursHarmoniques/ExemplesMu
 #            BaryConc, BaryConcTot, DifBaryConc, DifBaryConcTot
 spaceStat = ['roughness','concordance','concordanceOrdre3','concordanceTotale']
 spaceDyn = ['harmonicChange','harmonicNovelty','diffRoughness','diffConcordance','diffConcordanceContext']
-space = spaceStat + spaceDyn
+space = spaceStat #+ spaceDyn
 
+
+###### COMPARAISON DES TIMBRES
+
+# CONSTRUCTION DE LA MATRICE POINTS
 N = len(parametres.timbres)
 Points = []
 
 for ind in range(N):
-    l = ListeAccords(score, ind = 1)
+    l = ListeAccords(score, ind)
     l.HarmonicDescriptors()
     Points.append(l.Points(space))
+Points = np.asarray(Points)
 
-def Normalise(points, type = 'by timbre'):
-    if type == 'by timbre':
-        max = np.amax(points, axis = (0,2))
+# PARAMETRES
+type_Temporal = 'static' #'static', 'differential'
+type_Normalisation = 'by timbre' #'by curve', 'by timbre'
+
+# FONCTIONS
+
+# Fonction qui normalise la matrice Points
+def Normalise(Points = Points, type_Normalisation = type_Normalisation):
+    if type_Normalisation == 'by timbre':
+        max = np.amax(Points, axis = (0,2))
         for descr in range(Points.shape[1]):
             Points[:,descr,:] /= max[descr]
-    elif type == 'by curve':
-        max = np.amax(points, axis = 2)
+    elif type_Normalisation == 'by curve':
+        max = np.amax(Points, axis = 2)
         for timbre in range(Points.shape[0]):
             for descr in range(Points.shape[1]):
                 Points[timbre,descr,:] /= max[timbre,descr]
-    return points
+    return Points
+
+# Fonction qui calcule la matrice des écart-types sur tous les timbres
+def Dispersion(Points = Points,type_Temporal = type_Temporal):
+    if type_Temporal == 'static':
+        Disp = np.std(Points,axis = 0)
+    elif type_Temporal == 'differential':
+        Points_diff = np.zeros((Points.shape[0],Points.shape[1],Points.shape[2]-1))
+        for i in range(Points.shape[2]-1):
+            Points_diff[:,:,i] = Points[:,:,i+1]-Points[:,:,i]
+        Disp = np.std(Points_diff,axis = 0)
+    Disp_by_descr = np.mean(Disp, axis = 1)
+    Disp_by_time = np.linalg.norm(Disp, axis = 0)
+    return Disp, Disp_by_descr,Disp_by_time
+
+def MinimizeDispersion(Disp_by_descr, space = space):
+    disp_sorted = np.sort(Disp_by_descr)
+    descr_sorted = [space[i] for i in np.argsort(Disp_by_descr)]
+    return descr_sorted, disp_sorted
+
+def Visualize(Points = Points, space = space, descr = space[0:2], type_Temporal = type_Temporal):
+    dim1 = space.index(descr[0])
+    dim2 = space.index(descr[1])
+
+    plt.figure(figsize=(8, 7))
+    ax = plt.subplot()
+
+    for timbre in range(Points.shape[0]):
+        if type_Temporal =='static':
+            plt.plot(Points[timbre,dim1,:].tolist(), Points[timbre,dim2,:].tolist(), color ='C{}'.format(timbre),ls = '--',marker = 'o', label = 'timbre{}: ({},{},{})'.format(timbre+1, parametres.timbres[timbre][0],parametres.timbres[timbre][1],parametres.timbres[timbre][2]))
+            for t in range(len(Points[timbre,dim1,:].tolist())):
+                ax.annotate(' {}'.format(t+1), (Points[timbre,dim1,:][t], Points[timbre,dim2,:][t]), color='black')
+            plt.xlabel(descr[0][0].upper() + descr[0][1:])
+            plt.ylabel(descr[1][0].upper() + descr[1][1:])
+            plt.title(title + ' (' + descr[0][0].upper() + descr[0][1:] + ', ' + descr[1][0].upper() + descr[1][1:] + ')\n' + 'Normalisation ' + type_Normalisation[3:] + ' ' + type_Normalisation + '\n' + type_Temporal[0].upper() + type_Temporal[1:] + ' Representation')
+
+        elif type_Temporal =='differential':
+            Points_diff = np.zeros((Points.shape[0],Points.shape[1],Points.shape[2]-1))
+            for i in range(Points.shape[2]-1):
+                Points_diff[:,:,i] = Points[:,:,i+1]-Points[:,:,i]
+            plt.plot(Points_diff[timbre,dim1,:].tolist(), Points_diff[timbre,dim2,:].tolist(), color ='C{}'.format(timbre),ls = '--',marker = 'o', label = 'timbre{}: ({},{},{})'.format(timbre+1, parametres.timbres[timbre][0],parametres.timbres[timbre][1],parametres.timbres[timbre][2]))
+            for t in range(len(Points_diff[timbre,dim1,:].tolist())):
+                ax.annotate(' {}'.format(t+1), (Points_diff[timbre,dim1,:][t], Points_diff[timbre,dim2,:][t]), color='black')
+            plt.xlabel(descr[0][0].upper() + descr[0][1:] + ' evolution')
+            plt.ylabel(descr[1][0].upper() + descr[1][1:] + ' evolution')
+            plt.title(title + ' (' + descr[0][0].upper() + descr[0][1:] + ', ' + descr[1][0].upper() + descr[1][1:] + ')\n' + 'Normalisation ' + type_Normalisation[3:] + ' ' + type_Normalisation + '\n' + type_Temporal[0].upper() + type_Temporal[1:] + ' Representation')
+
+    plt.legend(frameon=True, framealpha=0.75)
+    plt.show()
+
+# MAIN
+Points = Normalise()
+Disp, Disp_by_descr,Disp_by_time = Dispersion()
+descr_sorted, disp_sorted = MinimizeDispersion(Disp_by_descr)
+# Visualize(type = 'static', descr = descr_sorted[0:2])
+Visualize(descr = ['concordanceTotale','roughness'])
 
 
-Points = np.asarray(Points)
-Points = Normalise(Points, type = 'by curve')
-# print(np.amax(Points, axis = 2).shape)
-print(Points.shape)
-print(Points)
+######## COMPARAISON DES DESCRIPTEURS
 
-Affichage(points, )
+
+
+
+
 
 
 # l.Classement('concordance')

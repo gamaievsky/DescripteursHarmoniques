@@ -4,9 +4,15 @@ mode = 'auto' #manual
 
 # timbre[i] = (K, decr, sig)
 timbres = {}
-timbres[0] = (11,1/2,0.01)
-timbres[1] = (11,1,0.01)
-timbres[2] = (11,2,0.01)
+timbres[0] = (3,1/2,0.01)
+timbres[1] = (3,1,0.01)
+timbres[2] = (3,2,0.01)
+timbres[3] = (7,1/2,0.01)
+timbres[4] = (7,1,0.01)
+timbres[5] = (7,2,0.01)
+timbres[6] = (15,1/2,0.01)
+timbres[7] = (15,1,0.01)
+timbres[8] = (15,2,0.01)
 
 
 
@@ -52,3 +58,6 @@ plot_abstr = True
 aff_score = False
 link = True
 color_abstr = 'b'
+
+## POINTS
+visualize_link_abstr = True
