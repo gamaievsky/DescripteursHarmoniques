@@ -16,6 +16,7 @@ timbres[8] = (15,2,0.01)
 
 
 
+
 noteDeReferencePourLeTunning = "C4"
 
 # partiels = [1,2,3,4,5,6,7,8,9,10,11]
@@ -59,5 +60,15 @@ aff_score = False
 link = True
 color_abstr = 'b'
 
-## POINTS
-visualize_link_abstr = True
+## COMPARAISON DE TIMBRES ET DES DESCRIPTEURS
+Comparaison_timbres = True
+Comparaison_descripteurs = False
+
+type_Temporal = 'differential' #'static', 'differential'
+type_Normalisation = 'by curve' #'by curve', 'by timbre'
+
+visualize_trajectories = False
+visualize_time_grouping = True
+
+correlation = False
+pca = False
