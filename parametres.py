@@ -15,13 +15,13 @@ timbres[7] = (15,1,0.01)
 timbres[8] = (15,2,0.01)
 
 
-
-
 noteDeReferencePourLeTunning = "C4"
 
 # partiels = [1,2,3,4,5,6,7,8,9,10,11]
 # amplitudes = [1, 1/2, 1/3, 1/4, 1/5, 1/6, 1/7, 1/8, 1/9, 1/10, 1/11]
 
+# Timbre par défaut
+timbre_def = (7,1/2,0.01)
 
 #PARAMETRES DES DESCRIPTEURS
 #Dissonance
@@ -61,11 +61,13 @@ link = True
 color_abstr = 'b'
 
 ## COMPARAISON DE TIMBRES ET DES DESCRIPTEURS
-Comparaison_timbres = True
-Comparaison_descripteurs = False
+one_track = False
+compare_instruments = True
+compare_scores = False
+compare_descriptors = False
 
 type_Temporal = 'differential' #'static', 'differential'
-type_Normalisation = 'by curve' #'by curve', 'by timbre'
+type_Normalisation = 'by timbre' #'by curve', 'by timbre'
 
 visualize_trajectories = False
 visualize_time_grouping = True
