@@ -75,12 +75,31 @@ class ListeAccords:
 
         '''Cette methode va etre appelee dans la classe Accord, mais elle est definie ici car le seul attribut d'objet
          qui en est parametre est l'instrument'''
-
         n = np.arange(0,16,0.001)
         S = np.zeros(np.shape(n))
-        for i in range(1, len(self.partiels) + 1):
-            S = S + (self.amplitudes[i-1]) * np.exp(-(n - np.log2(self.partiels[i-1] * f0))**2 / (2 * self.sig**2))
+
+        if not parametres.shepard:
+            for i in range(1, len(self.partiels) + 1):
+                S = S + (self.amplitudes[i-1]) * np.exp(-(n - np.log2(self.partiels[i-1] * f0))**2 / (2 * self.sig**2))
+
+        else:
+            def repr_classe(f0,fmin,fmax):
+                if fmin <= f0 < fmax: return f0
+                elif f0 < fmin: return repr_classe(2*f0,fmin,fmax)
+                elif f0 >= fmax: return repr_classe(f0/2,fmin,fmax)
+            f0 = repr_classe(f0,261.0,522.0)
+            p0 = np.log2(261)
+            Σ = 3.0
+            E = np.exp(-(n - p0)**2 / (2 * Σ**2))
+
+            for k in range(1,K+1):
+                f = repr_classe(k*f0,261.0,522.0)
+                p = np.log2(f)
+                for i in range(-8,8):
+                    if 0 < p +i < 16:
+                        S += (1/k**decr) * np.exp(-(n - (p+i))**2 / (2 * self.sig**2))
         return S
+
 
 
     def EnergyUniss(self):
