@@ -2,15 +2,19 @@ import numpy as np
 import matplotlib.pyplot as plt
 import pickle
 import sys
+import os
 from p5 import *
 
 sys.path.append(".")
 from classes import ListeAccords, Accord
 
 
-with open('liste_interval_vectors.pkl', 'rb') as f:
-    liste_interval_vectors = pickle.load(f)
-dic_interv_vect = {i:liste_interval_vectors[i-1] for i in range(1,77+1)}
+with open('Dic_iv.pkl', 'rb') as f:
+    Dic_iv = pickle.load(f)
+
+with open('Dic_card.pkl', 'rb') as f:
+    Dic_card = pickle.load(f)
+
 
 
 ######## LOAD CONCORDANCE AND ROUGHNESS
@@ -89,6 +93,20 @@ def mouse_pressed():
     # save(filename='permutahedre3.png')
 
 
+#
+# class GridChord:
+#     def __init__(self, ind):
+#         self.ind = ind
+#         self.n = 0
+#         while os.path.exists('/Users/manuel/Dropbox (TMG)/Thèse/Estrada/acc{}-{}'.format(ind,self.n + 1)):
+#             self.n += 1
+#         img
+#
+#
+#
+
+
+
 
 
 
@@ -96,7 +114,7 @@ class Chord:
     def __init__(self, ind):
         self.ind = ind
         self.image = img_dic[self.ind]
-        self.interval_vector = dic_interv_vect[ind]
+        self.interval_vector = Dic_iv[ind]
         self.concordance = dic_concordance[self.ind]
         self.roughness = dic_roughness[self.ind]
 
@@ -115,7 +133,7 @@ class Chord:
 
     def click(self,x,y,w,h):
         if (x < mouse_x < x+w) and (y < mouse_y < y+h):
-            print('Accord {}: {}'.format(self.ind, self.interval_vector) + '\n' + 'Concordance: {}, roughness: {}'.format(dic_concordance[self.ind], dic_roughness[self.ind]))
+            print('Accord {}: {}'.format(self.ind, self.interval_vector) + 'Cardinality: {}'.format(Dic_card[self.ind]) + '\n' + 'Concordance: {}, roughness: {}'.format(dic_concordance[self.ind], dic_roughness[self.ind]))
 
 
 class Column:
@@ -183,6 +201,10 @@ class Grid:
             column.draw(x_crt, h_ch * liste_α[i], h_ch, s, a_conc, b_conc, a_rgh, b_rgh)
             x_crt +=  h_ch * liste_α[i] + s_w
             liste_x_crt.append(x_crt)
+
+        stroke(0)
+        fill(100,230)
+        rect((400, 50),700, 700)
 
 
     def click(self, h_ch = 45, s_w = 10, s = 3):

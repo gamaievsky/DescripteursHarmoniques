@@ -108,10 +108,14 @@ def Make_score(ListeAccords, permute = False, print = 'intervalVector',indStart 
 
 
 ################# Enregistrer toutes les images #########################
-liste_imWidth = [260,330,370,400,450,500,540,600,640,680,730,780]
+liste_imWidth = [270,310,370,400,450,500,540,590,640,680,730,780]
 liste_imWidth_start = [0,130,130,130,130,130,130,130,130,130,130,130]
 dic_imWidth = {i:(liste_imWidth_start[i-1],liste_imWidth[i-1]) for i in range(1,13)}
 conv_musicxml = ConverterMusicXML()
+
+# with open('Dic_iv.pkl', 'rb') as f:
+#     Dic_iv = pickle.load(f)
+
 
 def AccordsPremierNiveau():
     ind = 1
@@ -122,6 +126,8 @@ def AccordsPremierNiveau():
         for a in ListeAccordsInt:
             stream1 = stream.Stream()
             a_mod = [(a+[12])[i+1] - (a+[12])[i] for i in range(len(a))]
+            ListeAccordsNiv1.append(a_mod)
+            Dic_iv[ind] = a_mod
             c = chord.Chord(a)
             c.quarterLength = 4.0
             c.lyric = str('{}: '.format(ind) + str(a_mod))
@@ -166,14 +172,17 @@ def AccordsDeuxiemeNiveau():
         return ListeAccordsNorm
 
     ind = 1
-    for N in range(1,13):
+    for N in range(1,11):
         left, right = dic_imWidth[N]
         ListeAccords = Enumerate(N,M)
         ListeAccordsInt = Interval_Reduction(ListeAccords)
         for a in ListeAccordsInt:
             liste_a_augm = Normal_Augmentation(a)
+            Dic_card[ind] = len(liste_a_augm)
             perm = 1
             for a_perm in liste_a_augm:
+                ListeAccordsNiv2.append(a_perm)
+                Dic_iv['{}-{}'.format(ind, perm)] = a_perm
                 a_perm_nonMod = [sum(([0]+a_perm)[:i]) for i in range (1,len(a_perm)+1)]
                 stream1 = stream.Stream()
                 c = chord.Chord(a_perm_nonMod)
@@ -186,25 +195,39 @@ def AccordsDeuxiemeNiveau():
                 out_filepath = conv_musicxml.write(stream1, 'musicxml', fp=filepath + title + '.XML', subformats=['png'])
                 im = Image.open(out_filepath)
                 width, height = im.size
-                region = im.crop((left, 0, right, height))
+                region = im.crop((left, 0, right - 30, height))
                 region.save(out_filepath[:-6] + '.png')
+
 
                 os.remove(filepath + title + '.XML')
                 os.remove(filepath + title + '-1.png')
 
                 perm += 1
 
-
             ind += 1
+    Dic_card[76] = 1
+    Dic_card[77] = 1
+    Dic_iv['76-1'] = [1,1,1,1,1,1,1,1,1,1,2]
+    Dic_iv['77-1'] = [1,1,1,1,1,1,1,1,1,1,1,1]
+    ListeAccordsNiv2.append([1,1,1,1,1,1,1,1,1,1,2])
+    ListeAccordsNiv2.append([1,1,1,1,1,1,1,1,1,1,1,1])
 
 
 
 
 
 #######################
-
+with open('Dic_iv.pkl', 'rb') as f:
+    Dic_iv = pickle.load(f)
+Dic_card = {}
+ListeAccordsNiv2 = []
 AccordsDeuxiemeNiveau()
-
+with open('Dic_iv.pkl', 'wb') as f:
+    pickle.dump(Dic_iv, f)
+with open('Dic_card.pkl', 'wb') as f:
+    pickle.dump(Dic_card, f)
+with open('ListeAccordsNiv2.pkl', 'wb') as f:
+    pickle.dump(ListeAccordsNiv2, f)
 
 
 
