@@ -8,7 +8,7 @@ noteDeReferencePourLeTunning = "C4"
 
 # Spectre
 timbre_def = (7,1/2,0.01)
-shepard = False
+shepard = True
 
 #PARAMETRES DES DESCRIPTEURS
 #Dissonance
@@ -41,15 +41,15 @@ norm_Novelty = 'energy' # 'None', 'energy'
 plot_score = False
 plot_class = False
 plot_descr = True
-plot_abstr = True
+plot_abstr = False
 
-aff_score = False
+aff_score = True
 link = True
 color_abstr = 'b'
 
 ## COMPARAISON DE TIMBRES ET DES DESCRIPTEURS
-one_track = False
-compare_instruments = True
+one_track = True
+compare_instruments = False
 compare_scores = False
 compare_descriptors = False
 

@@ -10,6 +10,7 @@ respectives
 
 import numpy as np
 import matplotlib.pyplot as plt
+import matplotlib.image as mpimg
 import pandas as pd
 import seaborn as sns
 from sklearn.preprocessing import StandardScaler
@@ -18,6 +19,7 @@ from mpl_toolkits.mplot3d import Axes3D
 from scipy import interpolate
 from operator import itemgetter, attrgetter
 from music21 import *
+import os
 #from music21 import note, stream, corpus, tree, chord, pitch, converter
 
 import parametres
@@ -39,7 +41,7 @@ class ListeAccords:
     '''
 
 
-    def __init__(self, stream, instr = parametres.timbre_def):
+    def __init__(self, stream, instr = parametres.timbre_def, partition = ''):
 
         self.stream = stream
         self.tree = tree.fromStream.asTimespans(stream, flatten=True,classList=(note.Note, chord.Chord))
@@ -50,12 +52,13 @@ class ListeAccords:
         else:
             self.partiels = []
             self.amplitudes = []
-            K = instr[0]
-            decr = instr[1]
+            self.K = instr[0]
+            self.decr = instr[1]
             self.sig = instr[2]
-            for i in range(K):
-                self.partiels.append(i+1)
-                self.amplitudes.append(1/(i+1)**decr)
+            if not parametres.shepard:
+                for i in range(self.K):
+                    self.partiels.append(i+1)
+                    self.amplitudes.append(1/(i+1)**self.decr)
 
 
         self.temperament = tunings.Equal
@@ -69,9 +72,10 @@ class ListeAccords:
         self.noteDeReferencePourLeTunning = parametres.noteDeReferencePourLeTunning
         self.grandeursHarmoniques = []
         self.energyUniss = [2,3,4,5,6,7,8]
+        self.partition = partition
 
 
-    def  spectre(self,f0):
+    def spectre(self,f0):
 
         '''Cette methode va etre appelee dans la classe Accord, mais elle est definie ici car le seul attribut d'objet
          qui en est parametre est l'instrument'''
@@ -92,14 +96,38 @@ class ListeAccords:
             Σ = 3.0
             E = np.exp(-(n - p0)**2 / (2 * Σ**2))
 
-            for k in range(1,K+1):
+            for k in range(1,self.K+1):
                 f = repr_classe(k*f0,261.0,522.0)
                 p = np.log2(f)
                 for i in range(-8,8):
                     if 0 < p +i < 16:
-                        S += (1/k**decr) * np.exp(-(n - (p+i))**2 / (2 * self.sig**2))
+                        S += (1/k**self.decr) * np.exp(-(n - (p+i))**2 / (2 * self.sig**2))
         return S
 
+
+    def spectre_pic(self,f0):
+
+        dic_spectre = {}
+        def repr_classe(f0,fmin,fmax):
+            if fmin <= f0 < fmax: return f0
+            elif f0 < fmin: return repr_classe(2*f0,fmin,fmax)
+            elif f0 >= fmax: return repr_classe(f0/2,fmin,fmax)
+        f = repr_classe(f0,261.0,522.0)
+        p0 = np.log2(261)
+        Σ = 3.0
+
+        # Construction de dic_spectre
+        for k in range(1,self.K+1):
+            f = repr_classe(k*f0,261.0,522.0)
+            p = np.log2(f)
+            for i in range(-8,8):
+                if 0 < p + i < 16:
+                    fp = f*2**i
+                    if fp in dic_spectre:
+                        dic_spectre[fp] += (1/k**self.decr)* np.exp(-(np.log2(fp) - p0)**2 / (2 * Σ**2))
+                    else : dic_spectre[fp] = (1/k**self.decr)* np.exp(-(np.log2(fp) - p0)**2 / (2 * Σ**2))
+
+        return dic_spectre
 
 
     def EnergyUniss(self):
@@ -125,7 +153,6 @@ class ListeAccords:
         return (pitch1.frequency)
 
 
-
     def HarmonicDescriptors (self):
 
         ''' Transforme chaque verticalite en objet Accord, calcule la concordance, la coherence et les concordances multiples, et stocke les resultats
@@ -136,7 +163,7 @@ class ListeAccords:
         Prec = 0
 
         for verticality in self.tree.iterateVerticalities():
-            v = Accord(verticality, self.partiels, self.amplitudes, self.sig, self.energyUniss, self.temperament,self.noteDeReferencePourLeTunning)
+            v = Accord(verticality, self.partiels, self.amplitudes, self.K, self.sig, self.decr, self.energyUniss, self.temperament,self.noteDeReferencePourLeTunning)
             if verticality.bassTimespan!=None :
                 v.identifiant = verticality.bassTimespan.element.id
 
@@ -167,38 +194,6 @@ class ListeAccords:
             self.grandeursHarmoniques.append(v)
 
 
-    def getAnnotatedStream(self, space = ['concordance'], write_name = True):
-        r=0
-        for gH in self.grandeursHarmoniques:
-            if gH.verticality.bassTimespan != None :
-                element = gH.verticality.bassTimespan.element
-                if element.isNote or element.isChord:
-                    dataString = ""
-
-                for descr in space:
-                    #Calibrage
-                    mult = 1
-                    if descr in ['concordanceOrdre3','concordanceTotale']: mult = 10
-                    elif descr in ['crossConcordance','crossConcordanceTot','concordance']: mult = 100
-                    if dataString != '': dataString + " "
-                    #Descripteurs différentiels
-                    if descr in ['crossConcordance','crossConcordanceTot','difBaryConc','difBaryConcTot']:
-                        if type(getattr(gH,descr)) != str:
-                            dataString = dataString + "-" + str(round(mult * getattr(gH,descr),2))
-                    #Descripteurs statiques
-                    else: dataString = dataString + str(round(mult * getattr(gH,descr),2))
-
-                #Rajout du nom du descripteur
-                if r == 0:
-                    if write_name:
-                        dataString = dataString  + "\n" + space[0][0].upper() + space[0][1:]
-                        r=1
-                #Assignement
-                element.lyric = dataString
-
-        return tree.toStream.partwise(self.tree, self.stream)
-
-
     def Liste(self, axe = 'concordance'):
         liste = []
         for accord in self.grandeursHarmoniques:
@@ -206,22 +201,77 @@ class ListeAccords:
             else: liste.append(getattr(accord, axe))
         return liste
 
+    def getAnnotatedStream(self, space = ['concordance'], write_name = True):
+        r=0
+        i = 0
+        liste = [self.Liste(descr) for descr in space]
+        for j in range(len(liste)):
+            m = max(liste[j])
+            if m != 0:
+                liste[j] = [(100/m)*val for val in liste[j]]
+        for gH in self.grandeursHarmoniques:
+            if gH.verticality.bassTimespan != None :
+                element = gH.verticality.bassTimespan.element
+                if element.isNote or element.isChord:
+                    dataString = ""
 
-    def Classement(self, descr):
-      s = stream.Measure()
-      ts1 = meter.TimeSignature('C')
-      s.insert(0, ts1)
-      s.insert(0, clef.TrebleClef())
+                for d, descr in enumerate(space):
+                    if dataString != '': dataString + " "
+                    #Descripteurs différentiels
+                    if descr in ['crossConcordance','crossConcordanceTot','difBaryConc','difBaryConcTot']:
+                        if type(getattr(gH,descr)) != str:
+                            # dataString = dataString + "-" + str(round(liste[d][i],1))
+                            dataString = dataString + "-" + str(int(liste[d][i]))
 
-      self.stream.lyrics = {}
-      self.getAnnotatedStream([descr], write_name = False)
-      self.grandeursHarmoniques.sort(key=attrgetter(descr), reverse=True)
-      for gH in self.grandeursHarmoniques:
-          element = gH.verticality.bassTimespan.element
-          s.insert(-1, element)
-      s[0].addLyric(descr[0].upper() + descr[1:] + ' triée')
-      s.show()
-      del s[0].lyrics[1]
+                    #Descripteurs statiques
+                    else:
+                        # dataString = dataString + str(round(liste[d][i],1))
+                        dataString = dataString + str(int(liste[d][i]))
+
+                #Rajout du nom du descripteur
+                if r == 0:
+                    if write_name:
+                        if parametres.shepard: shep = 'Shepard, '
+                        else: shep = 'no Shepard, '
+                        dataString = dataString  + "\n" + space[0][0].upper() + space[0][1:] +'\n'+ shep + 'K : {}, σ : {}, decr : {}'.format(self.K,self.sig,self.decr)
+                        r=1
+
+                #Assignement
+                # element.lyric = dataString
+                # element.lyric = element.forteClass
+                element.lyric = element.intervalVector
+            i+=1
+        return tree.toStream.partwise(self.tree, self.stream)
+
+    def getAnnotatedChords(self, type = 'intervalVector'):
+        for gH in self.grandeursHarmoniques:
+            element = gH.verticality.bassTimespan.element
+            if type == 'intervalVector':
+                element.duration = duration.Duration(4)
+                element.lyric = element.forteClass
+                print(element.lyric)
+
+        return tree.toStream.partwise(self.tree, self.stream)
+
+
+    def Classement(self, descr, reverse = True):
+        s = stream.Measure()
+        ts1 = meter.TimeSignature('C')
+        s.insert(0, ts1)
+        s.insert(0, clef.TrebleClef())
+
+        self.stream.lyrics = {}
+        self.getAnnotatedStream([descr], write_name = False)
+        self.grandeursHarmoniques.sort(key=attrgetter(descr), reverse = reverse)
+        for gH in self.grandeursHarmoniques:
+            element = gH.verticality.bassTimespan.element
+            s.insert(-1, element)
+        if parametres.shepard: shep = 'Shepard, '
+        else: shep = 'no Shepard, '
+        s[0].addLyric(descr[0].upper() + descr[1:] + ' triée' + '\n'+ shep + 'K : {}, σ : {}, decr : {}'.format(self.K,self.sig,self.decr))
+        s.show()
+        del s[0].lyrics[1]
+
 
     '''Fonction qui regroupe dans un tableau de dimension d*T ou d*(T-1) les valeurs des d descripteurs sur une séquence de T accords
     '''
@@ -251,22 +301,26 @@ class ListeAccords:
         times.append(gH.verticality.bassTimespan.endTime)
         n_frames = len(times)-1
 
-
-
-
         dim = len(space)
         plt.figure(figsize=(13, 7))
-
+        plt.title('K : {}, σ : {}, decr : {}'.format(self.K,self.sig,self.decr))
 
         # plt.title(title)
-        s = int(parametres.aff_score)
+        s = int(parametres.aff_score and (len(self.partition) != 0))
+
+        if s:
+            img=mpimg.imread(self.partition)
+            score = plt.subplot(dim+s,1,1)
+            plt.axis('off')
+            score.imshow(img)
+            plt.title('K : {}, σ : {}, decr : {}'.format(self.K,self.sig,self.decr))
 
 
         for k, descr in enumerate(space):
             l = self.Liste(descr)
             if "" in l: l.remove("")
             plt.subplot(dim+s, 1, k+1+s)
-            plt.vlines(times, min(l), max(l), color='k', alpha=0.9, linestyle='--')
+            plt.vlines(times, 0, max(l), color='k', alpha=0.9, linestyle='--')
             if not all(x>=0 for x in l):
                 plt.hlines(0,times[0], times[n_frames], alpha=0.5, linestyle = ':')
 
@@ -280,6 +334,8 @@ class ListeAccords:
                 plt.hlines(l, [t-0.25 for t in times[1:n_frames]], [t+0.25 for t in times[1:n_frames]], color=['b','r','g','c','m','y','b','r','g'][k], alpha=0.9, linestyle=':')
 
             plt.legend(frameon=True, framealpha=0.75)
+            # ax.set_ylim(bottom=0)
+        plt.legend(frameon=True, framealpha=0.75)
         plt.tight_layout()
         plt.show()
 
@@ -338,9 +394,6 @@ class ListeAccords:
 
 
 
-
-
-
 class Accord(ListeAccords):
     '''
     Classe qui traite les verticalites en heritant de l'instrument et de la methode spectre de la classe ListeAccords,
@@ -348,11 +401,13 @@ class Accord(ListeAccords):
     Faiblesse pour l'instant : l'arbre de la classe mere est vide, un attribut 'verticality' vient le remplacer
     '''
 
-    def __init__(self, verticality, partiels, amplitudes, sig, energyUniss, temperament, noteDeReferencePourLeTunning):
+    def __init__(self, verticality, partiels, amplitudes,K, sig, decr, energyUniss, temperament, noteDeReferencePourLeTunning):
 
         self.partiels = partiels
         self.amplitudes = amplitudes
+        self.K = K
         self.sig = sig
+        self.decr = decr
         self.temperament = temperament
         self.noteDeReferencePourLeTunning = noteDeReferencePourLeTunning
         self.energy = 0
@@ -419,31 +474,59 @@ class Accord(ListeAccords):
         if self.listeHauteursAvecMultiplicite != None:
             self.nombreDeNotes = len(self.listeHauteursAvecMultiplicite)
 
+    # def Roughness(self):
+    #
+    #     for i, pitch1 in enumerate(self.listeHauteursAvecMultiplicite):
+    #         for j, pitch2 in enumerate(self.listeHauteursAvecMultiplicite):
+    #             if (i<j):
+    #                 for k1 in range(1,len(self.partiels) + 1):
+    #                     for k2 in range(1,len(self.partiels) + 1):
+    #                         freq = [self.partiels[k2-1] * self.frequenceAvecTemperament(pitch2), self.partiels[k1-1] * self.frequenceAvecTemperament(pitch1)]
+    #                         freq.sort()
+    #                         fmin, fmax = freq[0], freq[1]
+    #                         s = 0.44*(np.log(parametres.β2/parametres.β1)/(parametres.β2-parametres.β1))*(fmax-fmin)/(fmin**(0.477))
+    #                         diss = np.exp(-parametres.β1*s)-np.exp(-parametres.β2*s)
+    #                         if parametres.type_diss=='produit':
+    #                             self.roughness = self.roughness + (self.amplitudes[k1-1] * self.amplitudes[k2-1]) * diss
+    #                         elif parametres.type_diss == 'minimum':
+    #                             self.roughness = self.roughness + min(self.amplitudes[k1-1],self.amplitudes[k2-1]) * diss
+    #
+    #      if parametres.norm_diss:
+    #          if parametres.type_diss=='produit':
+    #              self.roughness = self.roughness/self.energy
+    #          elif parametres.type_diss == 'minimum':
+    #              self.roughness = self.roughness/np.sqrt(self.energyUniss[0])
+    #
+    #      n = self.nombreDeNotes
+    #      self.roughness = self.roughness/(self.nombreDeNotes*(self.nombreDeNotes - 1)/2)
+
     def Roughness(self):
 
-         for i, pitch1 in enumerate(self.listeHauteursAvecMultiplicite):
-             for j, pitch2 in enumerate(self.listeHauteursAvecMultiplicite):
-                 if (i<j):
-                     for k1 in range(1,len(self.partiels) + 1):
-                         for k2 in range(1,len(self.partiels) + 1):
-                             freq = [self.partiels[k2-1] * self.frequenceAvecTemperament(pitch2), self.partiels[k1-1] * self.frequenceAvecTemperament(pitch1)]
-                             freq.sort()
-                             fmin, fmax = freq[0], freq[1]
-                             s = 0.44*(np.log(parametres.β2/parametres.β1)/(parametres.β2-parametres.β1))*(fmax-fmin)/(fmin**(0.477))
-                             diss = np.exp(-parametres.β1*s)-np.exp(-parametres.β2*s)
-                             if parametres.type_diss=='produit':
-                                 self.roughness = self.roughness + (self.amplitudes[k1-1] * self.amplitudes[k2-1]) * diss
-                             elif parametres.type_diss == 'minimum':
-                                 self.roughness = self.roughness + min(self.amplitudes[k1-1],self.amplitudes[k2-1]) * diss
+        for i, pitch1 in enumerate(self.listeHauteursAvecMultiplicite):
+            for j, pitch2 in enumerate(self.listeHauteursAvecMultiplicite):
+                if (i<j):
+                    dic1, dic2 = self.spectre_pic(self.frequenceAvecTemperament(pitch1)), self.spectre_pic(self.frequenceAvecTemperament(pitch2))
+                    for f1 in dic1:
+                        for f2 in dic2:
+                            freq = [f1,f2]
+                            freq.sort()
+                            fmin, fmax = freq[0], freq[1]
+                            s = 0.44*(np.log(parametres.β2/parametres.β1)/(parametres.β2-parametres.β1))*(fmax-fmin)/(fmin**(0.477))
+                            diss = np.exp(-parametres.β1*s)-np.exp(-parametres.β2*s)
+                            if parametres.type_diss=='produit':
+                                self.roughness = self.roughness + (dic1[f1] * dic2[f2]) * diss
+                            elif parametres.type_diss == 'minimum':
+                                self.roughness = self.roughness + min(dic1[f1],dic2[f2]) * diss
 
-         if parametres.norm_diss:
-             if parametres.type_diss=='produit':
-                 self.roughness = self.roughness/self.energy
-             elif parametres.type_diss == 'minimum':
-                 self.roughness = self.roughness/np.sqrt(self.energyUniss[0])
+        if parametres.norm_diss:
+            if parametres.type_diss=='produit':
+                self.roughness = self.roughness/self.energy
+            elif parametres.type_diss == 'minimum':
+                self.roughness = self.roughness/np.sqrt(self.energyUniss[0])
 
-         n = self.nombreDeNotes
-         self.roughness = self.roughness/(self.nombreDeNotes*(self.nombreDeNotes - 1)/2)
+        n = self.nombreDeNotes
+        self.roughness = self.roughness/(self.nombreDeNotes*(self.nombreDeNotes - 1)/2)
+
 
     def Tension(self):
 
@@ -495,7 +578,7 @@ class Accord(ListeAccords):
 
         """ Normalisation logarithmique, de maniere a rendre egales les concordances des unissons de n notes"""
         self.concordance = np.sum(self.spectreConcordance)
-        self.concordance = self.concordance/(self.nombreDeNotes*(self.nombreDeNotes - 1)/2)
+        self.concordance = self.concordance*(self.nombreDeNotes)/((self.nombreDeNotes - 1)/2)
 
         #self.concordance = np.log2(1 + self.concordance / (self.energyUniss[0]*self.nombreDeNotes*(self.nombreDeNotes - 1)/2))
         #self.concordance = np.log2(1 + self.concordance)/(np.log(1 + self.energyUniss[0]*self.nombreDeNotes*(self.nombreDeNotes - 1)/2) / np.log(1 + self.energyUniss[0]))
@@ -667,9 +750,6 @@ type_Temporal = parametres.type_Temporal
 type_Normalisation = parametres.type_Normalisation
 
 # CONSTRUCTION DE LA MATRICE POINTS
-
-
-
 
 # Palestrina, AccordsMajeurs, AccordsMineur, Majeur3et4notes, Majeur3et4notes, Accords3Notes, DispoMajeurMineur, Tension
 # Cadence3V, Cadence4VMaj, Cadence4Vmin, SuiteAccords
@@ -849,14 +929,28 @@ spaceDyn = ['harmonicChange','harmonicNovelty','diffRoughness','diffConcordance'
 
 if parametres.one_track:
 
-    title = 'CadenceM2'
+    title = 'enum_Norm_3'
+    # title = 'CadenceM2'
+    space = ['concordance']
     score = converter.parse('/Users/manuel/Github/DescripteursHarmoniques/ExemplesMusicaux/'+title+'.musicxml')
-    l = ListeAccords(score)
+    if os.path.exists('/Users/manuel/Dropbox (TMG)/Thèse/TimbreComparaison/'+title+'-score.png'):
+        partition = '/Users/manuel/Dropbox (TMG)/Thèse/TimbreComparaison/'+title+'-score.png'
+    else: partition = ''
+    l = ListeAccords(score, partition = partition)
     l.HarmonicDescriptors()
-    # l.Classement('concordance')
+    # l.Classement('concordance', reverse = True)
     # l.getAnnotatedStream(['concordance'])
-    # l.stream.show()
-    l.Affichage(space)
+    l.getAnnotatedChords()
+    l.stream.show()
+    # l.Affichage(space)
+    # axe = 'concordance'
+    # liste = l.Liste(axe)
+    # # for accord in l.grandeursHarmoniques:
+    # #     # if isinstance(getattr(accord, axe),str): pass
+    # #     # else: liste.append(getattr(accord, axe))
+    # #     axe = 'concordance'
+    # #     liste.append(getattr(accord, axe))
+    # print(liste)
 
 ###### COMPARAISON DES TIMBRES
 
