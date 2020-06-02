@@ -7,7 +7,7 @@ noteDeReferencePourLeTunning = "C4"
 # amplitudes = [1, 1/2, 1/3, 1/4, 1/5, 1/6, 1/7, 1/8, 1/9, 1/10, 1/11]
 
 # Spectre
-timbre_def = (7,1/2,0.01)
+timbre_def = (11,1/2,0.01)
 shepard = True
 
 #PARAMETRES DES DESCRIPTEURS

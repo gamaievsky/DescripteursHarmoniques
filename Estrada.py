@@ -1,13 +1,32 @@
 import numpy as np
-import matplotlib.pyplot as plt
+# import matplotlib.pyplot as plt
 import pickle
 import sys
 import os
 from p5 import *
+from tkinter import *
+import tkinter as tk
+from tkinter.ttk import *
+import matplotlib
+matplotlib.use("TkAgg")
+from matplotlib import pyplot as plt
+
+import random
+import sys
+from threading import Thread
+import time
+
+
 
 sys.path.append(".")
-from classes import ListeAccords, Accord
 
+
+######### DRAW
+
+K, decr, σ = 11, 1/2, 0.01
+
+with open('Dic_Harm.pkl', 'rb') as f:
+    Dic_Harm = pickle.load(f)
 
 with open('Dic_iv.pkl', 'rb') as f:
     Dic_iv = pickle.load(f)
@@ -15,97 +34,91 @@ with open('Dic_iv.pkl', 'rb') as f:
 with open('Dic_card.pkl', 'rb') as f:
     Dic_card = pickle.load(f)
 
+with open('/Users/manuel/Dropbox (TMG)/Thèse/Estrada/Dic_img.pkl', 'rb') as f:
+    Dic_img = pickle.load(f)
 
+with open('numSave.pkl', 'rb') as f:
+    numSave = pickle.load(f)
 
-######## LOAD CONCORDANCE AND ROUGHNESS
-
-# from music21 import *
-# from operator import itemgetter, attrgetter
-# import tunings
-# import parametres
-# listeSpectresAccords = []
-
-
-# score = converter.parse('/Users/manuel/Dropbox (TMG)/Thèse/Estrada/all_iv_chords.musicxml')
-#
-# l = ListeAccords(score)
-# l.HarmonicDescriptors()
-# liste_concordance = l.Liste('concordance')
-# liste_roughness = l.Liste('roughness')
-# max_conc, max_rough = max(liste_concordance), max(liste_roughness)
-# liste_concordance = [round(100*float(l)/max_conc,2) for l in liste_concordance]
-# liste_roughness = [round(100*float(l)/max_rough,2) for l in liste_roughness]
-#
-# dic_concordance = {i:liste_concordance[i-1] for i in range(1,77+1)}
-# dic_roughness = {i:liste_roughness[i-1] for i in range(1,77+1)}
-#
-# with open('dic_concordance_normNo.pkl', 'wb') as f:
-#     pickle.dump(dic_concordance, f)
-# with open('dic_roughness_normNo.pkl', 'wb') as f:
-#     pickle.dump(dic_roughness, f)
-
-
-
-
-######### DRAW
-
-with open('dic_concordance_normTot.pkl', 'rb') as f:
-    dic_concordance = pickle.load(f)
-
-with open('dic_roughness_normTot.pkl', 'rb') as f:
-    dic_roughness = pickle.load(f)
-
-with open('dic_img.pkl', 'rb') as f:
-    img_dic = pickle.load(f)
 
 dic_ind_start = {i:[1,2,8,20,35,48,59,66,71,74,76,77][i-1] for i in range(1,12+1)}
 dic_ind_end = {i:[1,7,19,34,47,58,65,70,73,75,76,77][i-1] for i in range(1,12+1)}
 
-# dic_concordance = {ind : np.log(1 + dic_concordance[ind]) * 100./np.log(101) for ind in dic_concordance}
-# dic_roughness = {ind : (np.exp(dic_roughness[ind]) - 1) * 100./(np.exp(100)-1) for ind in dic_roughness}
 
-# print('Concordance')
-# print([int(dic_concordance[ind]) for ind in dic_concordance])
-# print(np.std([dic_concordance[ind] for ind in dic_concordance]))
-# print('Roughness')
-# print([int(dic_roughness[ind]) for ind in dic_roughness])
-# print(np.std([dic_roughness[ind] for ind in dic_roughness]))
-# print('\nLoi uniforme : ' + str(np.std([i*100/77 for i in range(1,78)])))
+colorR1, colorG1, colorB1, colorR2, colorG2, colorB2 = 'roughness', 'defaut', 'concordance', 'concordanceOrdre3', 'concordanceTotale', 'harmonicity'
+rel = True
+niveau2 = False
 
 
 def setup():
     size(1200, 800)
+    title('Classification des accords - timbre (K: {}, decr: {}, σ: {})'.format(K,decr,σ))
     color_mode('RGBA', 100)
     global f
-    f = create_font("Arial.ttf", 16) # STEP 2 Create Font
+    f = create_font("Arial.ttf", 14)
+
     global grid
     grid = Grid()
+    global grid2
 
 
 def draw():
+    global niveau2
+    global grid2
     background(255)
     grid.draw()
+    if niveau2:
+            global x,y,w,h,R,h_ch
+            grid2 = Grid2(niveau2_ind, concordance, roughness)
+            # Calcul des paramètres d'affichage
+            x, y, w, h = 400,50,700,700
+            R0, h_ch0 = 200, 100
+            if grid2.card < 6:
+                R, h_ch = R0, h_ch0
+            else:
+                α = grid2.liste_chords2[0].image.width / grid2.liste_chords2[0].image.height
+                δ = np.tan(2*np.pi / grid2.card) / (α + np.tan(2*np.pi / grid2.card))
+                if δ*R0 > 100: R, h_ch = R0, h_ch0
+                else:
+                    R = w / (2 + α*δ) - 10
+                    h_ch = R*δ
+
+            stroke(0,200)
+            stroke_weight(2)
+            line((niv2_x,niv2_y), (x,y))
+            line((niv2_x,niv2_y+niv2_h), (x,y+h))
+            line((niv2_x+niv2_w,niv2_y), (x+w,y))
+            line((niv2_x+niv2_w,niv2_y+niv2_h), (x+w,y+h))
+
+            grid2.draw(x,y,w,h,R,h_ch)
+
 
 def mouse_pressed():
-    global found
-    found = False
-    grid.click()
-    # save(filename='permutahedre3.png')
+    global numSave
+    # Bouton Paramètres
+    if (0 < mouse_x < 160) and (0 < mouse_y < 25):
+        no_loop()
+        window.deiconify()
+        window.mainloop()
+        loop()
+    # Bouton Save
+    if (1110 < mouse_x < 1200) and (0 < mouse_y < 25):
+        save(filename='/Users/manuel/Dropbox (TMG)/Thèse/Estrada/Captures/permutahedre{}.png'.format(numSave))
+        print('file {} saved'.format(numSave))
+        numSave += 1
+        with open('numSave.pkl', 'wb') as f:
+            pickle.dump(numSave, f)
 
 
-#
-# class GridChord:
-#     def __init__(self, ind):
-#         self.ind = ind
-#         self.n = 0
-#         while os.path.exists('/Users/manuel/Dropbox (TMG)/Thèse/Estrada/acc{}-{}'.format(ind,self.n + 1)):
-#             self.n += 1
-#         img
-#
-#
-#
-
-
+    global niveau2
+    if not niveau2:
+        global found
+        found = False
+        grid.click()
+    else:
+        global found2
+        found2 = False
+        grid2.click(x,y,w,h,R,h_ch)
 
 
 
@@ -113,18 +126,33 @@ def mouse_pressed():
 class Chord:
     def __init__(self, ind):
         self.ind = ind
-        self.image = img_dic[self.ind]
+        self.image = Dic_img[self.ind]
         self.interval_vector = Dic_iv[ind]
-        self.concordance = dic_concordance[self.ind]
-        self.roughness = dic_roughness[self.ind]
+        self.concordance = Dic_Harm[(K,decr,σ)]['concordance'][self.ind]
+        self.roughness = Dic_Harm[(K,decr,σ)]['roughness'][self.ind]
+        self.dic_color = {}
+
+
 
     def draw(self,x,y,h, a_conc, b_conc, a_rgh, b_rgh):
         α = self.image.width / self.image.height
+        var = [colorR1,colorG1,colorB1]
+        for i,col in enumerate(['R','G','B']):
+            if var[i] == 'roughness':
+                self.dic_color[col]= a_rgh**rel * self.roughness + b_rgh*rel
+            elif var[i] == 'concordance':
+                self.dic_color[col] = a_conc**rel * self.concordance + b_conc*rel
+            else: self.dic_color[col] = 0
 
         stroke(0)
+        if niveau2 and (niveau2_ind == self.ind):
+            stroke_weight(3)
+        else: stroke_weight(1)
+
         if self.ind == 1: no_fill()
         else:
-            fill(a_rgh * self.roughness + b_rgh, 0, a_conc * self.concordance + b_conc,180)
+            # no_fill()
+            fill(self.dic_color['R'], self.dic_color['G'], self.dic_color['B'],150)
         rect((x, y), α*h, h)
 
         image(self.image, (x, y), (α*h,h))
@@ -132,8 +160,18 @@ class Chord:
 
 
     def click(self,x,y,w,h):
-        if (x < mouse_x < x+w) and (y < mouse_y < y+h):
-            print('Accord {}: {}'.format(self.ind, self.interval_vector) + 'Cardinality: {}'.format(Dic_card[self.ind]) + '\n' + 'Concordance: {}, roughness: {}'.format(dic_concordance[self.ind], dic_roughness[self.ind]))
+        global niveau2, niveau2_ind, concordance, roughness, niv2_x, niv2_y, niv2_h, niv2_w
+        if not niveau2:
+            if (x < mouse_x < x+w) and (y < mouse_y < y+h):
+                print('Accord {}: {}'.format(self.ind, self.interval_vector) + '\n' + 'Cardinality: {}'.format(Dic_card[self.ind]) + '\n' + 'Concordance: {}\nRoughness: {}'.format(self.concordance, self.roughness) + '\n')
+                niveau2 = True
+                niveau2_ind = self.ind
+                concordance = self.concordance
+                roughness = self.roughness
+                niv2_x = x
+                niv2_y = y
+                niv2_h = h
+                niv2_w = w
 
 
 class Column:
@@ -167,7 +205,6 @@ class Column:
             self.liste_chords[i].click(x,y,w_ch,h_ch)
             i+=1
 
-
 class Grid:
     def __init__(self, ind_start = 1, ind_end = 12):
         self.liste_column = []
@@ -185,10 +222,10 @@ class Grid:
         # dic_y = {[260,290,360,400,450,500,540,580,630,670,720,760]
         # Coefficients pour le dessin
         indices = range(dic_ind_start[self.liste_column[0].ind], dic_ind_end[self.liste_column[-1].ind] +1)
-        conc_min = min([dic_concordance[ind] for ind in indices])
-        conc_max = max([dic_concordance[ind] for ind in indices])
-        rgh_min = min([dic_roughness[ind] for ind in indices])
-        rgh_max = max([dic_roughness[ind] for ind in indices])
+        conc_min = min([Dic_Harm[(K,decr,σ)]['concordance'][ind] for ind in indices])
+        conc_max = max([Dic_Harm[(K,decr,σ)]['concordance'][ind] for ind in indices])
+        rgh_min = min([Dic_Harm[(K,decr,σ)]['roughness'][ind] for ind in indices])
+        rgh_max = max([Dic_Harm[(K,decr,σ)]['roughness'][ind] for ind in indices])
         if self.liste_column[0].ind == 1:  δ = 0
         else: δ = 10
         a_conc = (100-δ)/(conc_max-conc_min)
@@ -202,9 +239,27 @@ class Grid:
             x_crt +=  h_ch * liste_α[i] + s_w
             liste_x_crt.append(x_crt)
 
+        #Bouton save
         stroke(0)
-        fill(100,230)
-        rect((400, 50),700, 700)
+        fill(95,95,100,250)
+        rect((1110, 0), 90, 25)
+        # stroke(255,255)
+        text_font(f)
+        fill(0)
+        text_align("RIGHT")
+        text('Enregistrer',(1190,5))
+
+        #Bouton paramètres
+        fill(95,95,100,250)
+        rect((0, 0), 160, 25)
+        # stroke(255,255)
+        text_font(f)
+        fill(0)
+        text_align("LEFT")
+        text('Paramètres d\'affichage',(5,5))
+
+
+
 
 
     def click(self, h_ch = 45, s_w = 10, s = 3):
@@ -213,11 +268,190 @@ class Grid:
             self.liste_column[i].click(liste_x_crt[i], liste_α[i] * h_ch , h_ch, s)
             i += 1
 
+class Chord2:
+    def __init__(self, ind, perm, concordance, roughness):
+        self.ind = ind
+        self.perm = perm
+        self.id = '{}-{}'.format(ind, perm)
+        self.image = Dic_img[self.id]
+        self.interval_vector = Dic_iv[self.id]
+
+        self.concordance = concordance
+        self.roughness = roughness
+        self.conc3 = Dic_Harm[(K,decr,σ)]['concordanceOrdre3'][self.id]
+        self.concTot = Dic_Harm[(K,decr,σ)]['concordanceTotale'][self.id]
+        self.harm = Dic_Harm[(K,decr,σ)]['harmonicity'][self.id]
+        self.tension = Dic_Harm[(K,decr,σ)]['tension'][self.id]
+        self.dic_color = {}
+
+
+    def draw(self,x,y,h,a_conc3, b_conc3, a_concTot, b_concTot, a_harm, b_harm, a_tension, b_tension):
+        α = self.image.width / self.image.height
+        var = [colorR2,colorG2,colorB2]
+        for i,col in enumerate(['R','G','B']):
+            if var[i] == 'concordanceOrdre3':
+                self.dic_color[col]= a_conc3**rel * self.conc3 + b_conc3*rel
+            elif var[i] == 'concordanceTotale':
+                self.dic_color[col] = a_concTot**rel * self.concTot + b_concTot*rel
+            elif var[i] == 'harmonicity':
+                self.dic_color[col] = a_harm**rel * self.harm + b_harm*rel
+            elif var[i] == 'tension':
+                self.dic_color[col] = a_tension**rel * self.tension + b_tension*rel
+            else: self.dic_color[col] = 0
+
+
+        stroke(0)
+        fill(self.dic_color['R'], self.dic_color['G'], self.dic_color['B'],150)
+        rect((x, y), α*h, h)
+        image(self.image, (x, y), (α*h,h))
+
+
+    def click(self,x,y,h):
+        α = self.image.width/self.image.height
+        if (x < mouse_x < x+α*h) and (y < mouse_y < y+h):
+            print('Accord ' + self.id + ': {}'.format(self.interval_vector) + '\nConcordance3: {}\nConcordanceTot: {}\nHarmonicity: {}\nTension: {}\n'.format(round(self.conc3,2), round(self.concTot,2), round(self.harm,2), round(self.tension,2)))
+
+class Grid2:
+    def __init__(self, ind, concordance, roughness):
+        self.ind = ind
+        self.interval_vector = Dic_iv[ind]
+        self.card = Dic_card[ind]
+        self.concordance = concordance
+        self.roughness = roughness
+        self.liste_chords2 = []
+        for perm in range(1,self.card + 1):
+            self.liste_chords2.append(Chord2(ind, perm, self.concordance, self.roughness))
+
+
+    def draw(self,x,y,w,h,R,h_ch):
+        stroke(0)
+        fill(100,230)
+        rect((400, 50),700, 700)
+        conc3_min, conc3_max = min([chord2.conc3  for chord2 in self.liste_chords2]), max([chord2.conc3  for chord2 in self.liste_chords2])
+        concTot_min, concTot_max = min([chord2.concTot  for chord2 in self.liste_chords2]), max([chord2.concTot  for chord2 in self.liste_chords2])
+        harm_min, harm_max = min([chord2.harm  for chord2 in self.liste_chords2]), max([chord2.harm  for chord2 in self.liste_chords2])
+        tension_min, tension_max = min([chord2.tension  for chord2 in self.liste_chords2]), max([chord2.tension  for chord2 in self.liste_chords2])
+        if self.card == 1:
+            a_conc3, b_conc3, a_concTot, b_concTot, a_harm, b_harm, a_tension, b_tension = 1,1,1,1,1,1,1,1
+        else:
+            δ = 10
+            a_conc3, b_conc3  = (100-δ)/(conc3_max-conc3_min), 100. - conc3_max*((100-δ)/(conc3_max-conc3_min))
+            a_concTot, b_concTot  = (100-δ)/(concTot_max-concTot_min), 100. - concTot_max*((100-δ)/(concTot_max-concTot_min))
+            a_harm, b_harm  = (100-δ)/(harm_max-harm_min), 100. - harm_max*((100-δ)/(harm_max-harm_min))
+            a_tension, b_tension = 0, 0
+            # a_tension, b_tension  = (100-δ)/(tension_max-tension_min), 100. - tension_max*((100-δ)/(tension_max-tension_min))
+
+        α = self.liste_chords2[0].image.width / self.liste_chords2[0].image.height
+        x0 = x + w/2 - α*h_ch/2
+        y0 = y + h/2 - h_ch/2
+        for chord2 in self.liste_chords2:
+            chord2.draw(x0 + R*np.cos(-np.pi/2 + 2*np.pi*(chord2.perm-1) / self.card), y0 + R*np.sin(-np.pi/2 + 2*np.pi*(chord2.perm-1) / self.card), h_ch, a_conc3, b_conc3, a_concTot, b_concTot, a_harm, b_harm, a_tension, b_tension)
+        text_font(f)
+        fill(0)
+        text_align("CENTER")
+        text('Prime form {}\n{}\nCardinality: {}'.format(self.ind, self.interval_vector, self.card),(x + w/2,y + h/2))
+
+    def click(self,x,y,w,h,R,h_ch):
+        global niveau2
+        if not (((x < mouse_x < x+w) and (y < mouse_y < y+h)) or ((0 < mouse_x < 160) and (0 < mouse_y < 25)) or ((1110 < mouse_x < 1200) and (0 < mouse_y < 25))):
+            niveau2 = False
+        else:
+            α = self.liste_chords2[0].image.width / self.liste_chords2[0].image.height
+            x0 = x + w/2 - α*h_ch/2
+            y0 = y + h/2 - h_ch/2
+            for chord2 in self.liste_chords2:
+                chord2.click(x0 + R*np.cos(-np.pi/2 + 2*np.pi*(chord2.perm-1) / self.card), y0 + R*np.sin(-np.pi/2 + 2*np.pi*(chord2.perm-1) / self.card), h_ch)
+
+class Interface(Frame):
+
+    def __init__(self, window, space,ind, row_start, column_start):
+        Frame.__init__(self, window, relief=RIDGE, borderwidth=3)
+        self.grid(column = column_start, row = row_start, columnspan = 6, rowspan = len(space) + 1, padx = 50, pady = 10)
+
+        self.niveau = Label(self, text='Niveau {}'.format(ind))
+        self.niveau.configure(font= 'Arial 15')#"Verana 15 underline")
+        self.niveau.grid(column = column_start, row = row_start)
+
+        self.rouge = Label(self, text = 'Rouge', foreground = 'red')
+        self.vert = Label(self, text = 'Vert', foreground = 'green')
+        self.bleu = Label(self, text = 'Bleu', foreground = 'blue')
+        self.rouge.grid(column = column_start + 2, row = row_start)
+        self.vert.grid(column = column_start + 3, row = row_start)
+        self.bleu.grid(column = column_start + 4, row = row_start)
+        if ind==1:
+            self.varR = StringVar(None, colorR1)
+            self.varG = StringVar(None, colorG1)
+            self.varB = StringVar(None, colorB1)
+        elif ind==2:
+            self.varR = StringVar(None, colorR2)
+            self.varG = StringVar(None, colorG2)
+            self.varB = StringVar(None, colorB2)
 
 
 
+
+        def clickedR():
+            print('Rouge : ' + self.varR.get())
+        def clickedG():
+            print('Vert : ' + self.varG.get())
+        def clickedB():
+            print('Bleu : ' + self.varG.get())
+
+
+        row_count = 1
+        for descr in space + ['defaut']:
+            self.lab_descr = Label(self, text = descr[0].upper() + descr[1:])
+            self.lab_descr.grid(column = column_start + 1, row = row_start + row_count)
+
+            self.radR = Radiobutton(self, value=descr, variable=self.varR, command=clickedR)
+            self.radG = Radiobutton(self, value=descr, variable=self.varG, command=clickedG)
+            self.radB = Radiobutton(self, value=descr, variable=self.varB, command=clickedB)
+
+
+            self.radR.grid(column=column_start + 2, row=row_start + row_count)
+            self.radG.grid(column=column_start + 3, row=row_start + row_count)
+            self.radB.grid(column=column_start + 4, row=row_start + row_count)
+            row_count += 1
+
+def ParametresCouleurs():
+    # Création de l'objet fenêtre tk
+    window = Tk()
+    window.title("Paramètres de couleur")
+    window.geometry('400x380')
+    interface1 = Interface(window, ['concordance', 'roughness'],1, 0, 0)
+    interface2 = Interface(window, ['concordanceOrdre3', 'concordanceTotale', 'harmonicity', 'tension'], 2, 7, 0)
+
+    frame_rel = Frame(window, relief=RIDGE, borderwidth=3)
+    frame_rel.grid(column = 0, row = 15, columnspan = 3, rowspan = 1, padx = 100, pady = 10)
+
+    # def clickRel():
+    relLab = Label(frame_rel, text = 'Valeurs : ')
+    relLab.configure(font= 'Arial 15')
+    relVar = BooleanVar(None, True)
+    relVar.set(True) #set check state
+    def clickRel():
+        global rel
+        rel = relVar.get()
+        print(rel)
+    relBut1 = Radiobutton(frame_rel,text='relatives', value = True, variable=relVar,command = clickRel)
+    relBut2 = Radiobutton(frame_rel, text='absolues',value = False, variable=relVar, command = clickRel)
+    relLab.grid(row = 15, column = 0)
+    relBut1.grid(row = 15, column = 1)
+    relBut2.grid(row = 15, column = 2)
+
+    def clickOk():
+        global colorR1, colorG1, colorB1, colorR2, colorG2, colorB2
+        colorR1, colorG1, colorB1 = interface1.varR.get(),  interface1.varG.get(), interface1.varB.get()
+        colorR2, colorG2, colorB2 = interface2.varR.get(),  interface2.varG.get(), interface2.varB.get()
+        window.withdraw()
+        window.quit()
+    ok = Button(window,text = 'Appliquer',command = clickOk)
+    ok.grid(row = 17, padx=150, pady=10)
+    return window
 
 
 
 if __name__ == '__main__':
+
+    window = ParametresCouleurs()
     run()

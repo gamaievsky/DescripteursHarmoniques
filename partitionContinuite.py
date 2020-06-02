@@ -9,6 +9,7 @@ respectives
 #from mimetypes import init
 
 import numpy as np
+from numpy import linalg as LA
 import matplotlib.pyplot as plt
 import matplotlib.image as mpimg
 import pandas as pd
@@ -108,24 +109,30 @@ class ListeAccords:
     def spectre_pic(self,f0):
 
         dic_spectre = {}
-        def repr_classe(f0,fmin,fmax):
-            if fmin <= f0 < fmax: return f0
-            elif f0 < fmin: return repr_classe(2*f0,fmin,fmax)
-            elif f0 >= fmax: return repr_classe(f0/2,fmin,fmax)
-        f = repr_classe(f0,261.0,522.0)
-        p0 = np.log2(261)
-        Σ = 3.0
+        if parametres.shepard:
+            def repr_classe(f0,fmin,fmax):
+                if fmin <= f0 < fmax: return f0
+                elif f0 < fmin: return repr_classe(2*f0,fmin,fmax)
+                elif f0 >= fmax: return repr_classe(f0/2,fmin,fmax)
+            f = repr_classe(f0,261.0,522.0)
+            p0 = np.log2(261)
+            Σ = 3.0
 
-        # Construction de dic_spectre
-        for k in range(1,self.K+1):
-            f = repr_classe(k*f0,261.0,522.0)
-            p = np.log2(f)
-            for i in range(-8,8):
-                if 0 < p + i < 16:
-                    fp = f*2**i
-                    if fp in dic_spectre:
-                        dic_spectre[fp] += (1/k**self.decr)* np.exp(-(np.log2(fp) - p0)**2 / (2 * Σ**2))
-                    else : dic_spectre[fp] = (1/k**self.decr)* np.exp(-(np.log2(fp) - p0)**2 / (2 * Σ**2))
+            # Construction de dic_spectre
+            for k in range(1,self.K+1):
+                f = repr_classe(k*f0,261.0,522.0)
+                p = np.log2(f)
+                for i in range(-8,8):
+                    if 0 < p + i < 16:
+                        fp = f*2**i
+                        if fp in dic_spectre:
+                            dic_spectre[fp] += (1/k**self.decr)* np.exp(-(np.log2(fp) - p0)**2 / (2 * Σ**2))
+                        else : dic_spectre[fp] = (1/k**self.decr)* np.exp(-(np.log2(fp) - p0)**2 / (2 * Σ**2))
+        else:
+            for k in range(1, self.K+1):
+                fk = k*f0
+                dic_spectre[fk] = self.amplitudes[k-1]
+
 
         return dic_spectre
 
@@ -173,24 +180,26 @@ class ListeAccords:
             if v.nombreDeNotes>=2:
                 v.SpectreAccord()
                 listeSpectresAccords.append(v.spectreAccord)
-                v.Context()
-                v.Roughness()
-                v.SpectreConcordance()
-                v.Concordance()
-                v.CrossConcordance(Prec)
-                v.HarmonicChange(Prec)
-                v.HarmonicNovelty(Prec)
-                v.DiffConcordance(Prec)
-                v.DiffConcordanceContext(Prec)
-                v.DiffRoughness(Prec)
+                # v.Context()
+                # v.Roughness()
+                # v.SpectreConcordance()
+                # v.Concordance()
+                v.Harmonicity()
+                # v.CrossConcordance(Prec)
+                # v.HarmonicChange(Prec)
+                # v.HarmonicNovelty(Prec)
+                # v.DiffConcordance(Prec)
+                # v.DiffConcordanceContext(Prec)
+                # v.DiffRoughness(Prec)
 
-                if v.nombreDeNotes>=3:
-                    v.ConcordanceOrdre3()
-                    v.SpectreConcordanceTot()
-                    v.ConcordanceTotale()
-                    v.CrossConcordanceTot(Prec)
+                # if v.nombreDeNotes>=3:
+                #     # v.ConcordanceOrdre3()
+                #     # v.SpectreConcordanceTot()
+                #     # v.ConcordanceTotale()
+                #     v.Tension()
+                #     # v.CrossConcordanceTot(Prec)
 
-            Prec = v
+            # Prec = v
             self.grandeursHarmoniques.append(v)
 
 
@@ -208,6 +217,7 @@ class ListeAccords:
         for j in range(len(liste)):
             m = max(liste[j])
             if m != 0:
+                pass
                 liste[j] = [(100/m)*val for val in liste[j]]
         for gH in self.grandeursHarmoniques:
             if gH.verticality.bassTimespan != None :
@@ -220,12 +230,12 @@ class ListeAccords:
                     #Descripteurs différentiels
                     if descr in ['crossConcordance','crossConcordanceTot','difBaryConc','difBaryConcTot']:
                         if type(getattr(gH,descr)) != str:
-                            # dataString = dataString + "-" + str(round(liste[d][i],1))
+                            # dataString = dataString + "-" + str(round(liste[d][i],8))
                             dataString = dataString + "-" + str(int(liste[d][i]))
 
                     #Descripteurs statiques
                     else:
-                        # dataString = dataString + str(round(liste[d][i],1))
+                        # dataString = dataString + str(round(liste[d][i],5))
                         dataString = dataString + str(int(liste[d][i]))
 
                 #Rajout du nom du descripteur
@@ -237,20 +247,10 @@ class ListeAccords:
                         r=1
 
                 #Assignement
-                # element.lyric = dataString
+                element.lyric = dataString
                 # element.lyric = element.forteClass
-                element.lyric = element.intervalVector
+                # element.lyric = element.intervalVector
             i+=1
-        return tree.toStream.partwise(self.tree, self.stream)
-
-    def getAnnotatedChords(self, type = 'intervalVector'):
-        for gH in self.grandeursHarmoniques:
-            element = gH.verticality.bassTimespan.element
-            if type == 'intervalVector':
-                element.duration = duration.Duration(4)
-                element.lyric = element.forteClass
-                print(element.lyric)
-
         return tree.toStream.partwise(self.tree, self.stream)
 
 
@@ -438,6 +438,7 @@ class Accord(ListeAccords):
         self.diffRoughness = 0
         self.spectreHarmonicNovelty = 0
         self.harmonicNovelty = 0
+        self.harmonicity = 0
 
 
 
@@ -529,30 +530,39 @@ class Accord(ListeAccords):
 
 
     def Tension(self):
+        for i, pitch1 in enumerate(self.listeHauteursAvecMultiplicite):
+            for j, pitch2 in enumerate(self.listeHauteursAvecMultiplicite):
+                for l, pitch3 in enumerate(self.listeHauteursAvecMultiplicite):
+                    if (i<j<l):
+                        dic1, dic2, dic3 = self.spectre_pic(self.frequenceAvecTemperament(pitch1)), self.spectre_pic(self.frequenceAvecTemperament(pitch2)), self.spectre_pic(self.frequenceAvecTemperament(pitch3))
+                        for f1 in dic1:
+                            for f2 in dic2:
+                                for f3 in dic3:
+                                    freq = [f1,f2,f3]
+                                    freq_ord = sorted(range(len(freq)), key=lambda k: freq[k])
+                                    dic_ord = [[dic1, dic2, dic3][i] for i in freq_ord]
+                                    freq.sort()
+                                    x = np.log2(freq[1] / freq[0])
+                                    y = np.log2( freq[2] / freq[1])
 
-         for i, pitch1 in enumerate(self.listeHauteursAvecMultiplicite):
-             for j, pitch2 in enumerate(self.listeHauteursAvecMultiplicite):
-                 for l, pitch3 in enumerate(self.listeHauteursAvecMultiplicite):
-                     if (i<j<l):
-                         for k1 in range(1,len(self.partiels) + 1):
-                             for k2 in range(1,len(self.partiels) + 1):
-                                 for k3 in range(1,len(self.partiels) + 1):
-                                     x = np.log2((self.partiels[k2-1] * self.frequenceAvecTemperament(pitch2)) / (self.partiels[k1-1] * self.frequenceAvecTemperament(pitch1)))
-                                     y = np.log2((self.partiels[k3-1] * self.frequenceAvecTemperament(pitch3)) / (self.partiels[k2-1] * self.frequenceAvecTemperament(pitch2)))
-                                     z = x + y
-                                     X = abs(x)
-                                     Y = abs(y)
-                                     Z = abs(z)
-                                     a = 0.6
-                                     diff = [abs(X-Y), abs(X-Z), abs(Y-Z)]
-                                     diff.remove(max(diff))
-                                     contrib = abs(diff[1]-diff[0])
-                                     self.tension = self.tension + (self.amplitudes[k1-1] * self.amplitudes[k2-1] * self.amplitudes[k3-1]) * (np.exp(-(12*(contrib)/a)**2))
+                                    self.tension += (dic_ord[0][freq[0]] * dic_ord[1][freq[1]] * dic_ord[2][freq[2]]) * np.exp(-(12*(abs(y-x))/parametres.δ)**2)
 
-                                     #self.tension = self.tension + (self.amplitudes[k1-1] * self.amplitudes[k2-1] * self.amplitudes[k3-1]) * max(np.exp(-(12*(X-Y)/a)**2) , np.exp(-(12*(Y-Z)/a)**2) , np.exp(-(12*(X-Z)/a)**2))
+        n = self.nombreDeNotes
+        self.concordanceOrdre3 *= (n**3 / (n *(n-1)*(n-2)/6)) / LA.norm(self.spectreAccord,ord=3)**3
 
-         n = self.nombreDeNotes
-         self.tension = self.tension/(self.nombreDeNotes*(self.nombreDeNotes - 1)*(self.nombreDeNotes - 2)/6)
+    def Harmonicity(self):
+        f0 = 261
+        # Division du demi-ton en 8e de demi-tons
+        freqOct = [f0*2**(i/(12*8)) for i in range(12*8)]
+        for f in freqOct:
+            corr = np.sum(np.multiply(self.spectreAccord, self.spectre(f)))
+            if self.harmonicity < corr:
+                self.harmonicity = corr
+        self.harmonicity /= self.energy
+
+
+
+
 
     def ConcordanceOrdre3(self):
 
@@ -576,7 +586,7 @@ class Accord(ListeAccords):
 
     def Concordance(self):
 
-        """ Normalisation logarithmique, de maniere a rendre egales les concordances des unissons de n notes"""
+        " Normalisation logarithmique, de maniere a rendre egales les concordances des unissons de n notes"
         self.concordance = np.sum(self.spectreConcordance)
         self.concordance = self.concordance*(self.nombreDeNotes)/((self.nombreDeNotes - 1)/2)
 
@@ -595,7 +605,7 @@ class Accord(ListeAccords):
 
 
     def BaryConcordance(self):
-        self.baryConc = np.sum(self.spectreConcordance * np.arange(0,16,0.001)) / (self.concordance * (self.nombreDeNotes*(self.nombreDeNotes - 1)/2))
+        self.baryConc = np.sum(self.spectreConcordance * np.nnènhe(0,16,0.001)) / (self.concordance * (self.nombreDeNotes*(self.nombreDeNotes - 1)/2))
 
 
     def DifBaryConc(self,Prec): # Calcule les variations de barycentre
@@ -931,17 +941,16 @@ if parametres.one_track:
 
     title = 'enum_Norm_3'
     # title = 'CadenceM2'
-    space = ['concordance']
+    space = ['harmonicity']
     score = converter.parse('/Users/manuel/Github/DescripteursHarmoniques/ExemplesMusicaux/'+title+'.musicxml')
     if os.path.exists('/Users/manuel/Dropbox (TMG)/Thèse/TimbreComparaison/'+title+'-score.png'):
         partition = '/Users/manuel/Dropbox (TMG)/Thèse/TimbreComparaison/'+title+'-score.png'
     else: partition = ''
     l = ListeAccords(score, partition = partition)
     l.HarmonicDescriptors()
-    # l.Classement('concordance', reverse = True)
-    # l.getAnnotatedStream(['concordance'])
-    l.getAnnotatedChords()
-    l.stream.show()
+    l.Classement('harmonicity', reverse = True)
+    # l.getAnnotatedStream(space)
+    # l.stream.show()
     # l.Affichage(space)
     # axe = 'concordance'
     # liste = l.Liste(axe)

@@ -214,20 +214,20 @@ def AccordsDeuxiemeNiveau():
 
 
 
-
-
 #######################
-with open('Dic_iv.pkl', 'rb') as f:
-    Dic_iv = pickle.load(f)
-Dic_card = {}
-ListeAccordsNiv2 = []
-AccordsDeuxiemeNiveau()
-with open('Dic_iv.pkl', 'wb') as f:
-    pickle.dump(Dic_iv, f)
-with open('Dic_card.pkl', 'wb') as f:
-    pickle.dump(Dic_card, f)
-with open('ListeAccordsNiv2.pkl', 'wb') as f:
-    pickle.dump(ListeAccordsNiv2, f)
+with open('ListeAccordsNiv1.pkl', 'rb') as f:
+    ListeAccordsNiv1 = pickle.load(f)
+ListeAccordsNiv1 = [[sum(([0]+a)[:i]) for i in range (1,len(a)+1)] for a in ListeAccordsNiv1]
+
+Make_score(ListeAccordsNiv1, False, indStart = 1)
+
+
+# with open('Dic_iv.pkl', 'wb') as f:
+#     pickle.dump(Dic_iv, f)
+# with open('Dic_card.pkl', 'wb') as f:
+#     pickle.dump(Dic_card, f)
+# with open('ListeAccordsNiv2.pkl', 'wb') as f:
+#     pickle.dump(ListeAccordsNiv2, f)
 
 
 
