@@ -16,12 +16,13 @@ import itertools
 
 M = 11 # Ambitius (en demi-tons)
 
-''' Fonction qui fait donne la liste de tous les accords, sous forme de PitchClass  '''
+''' Fonction qui donne la liste de tous les accords, sous forme de PitchClass  '''
 def Enumerate(N,M):
     Liste_Accords = []
     def Add_notes(NotesPrec, N, M):
         # Liste complète : on a un accord, qu'on ajoute à Liste_Accords
         if len(NotesPrec)==N:
+            # NotesPrec = [n/((M+1)/12) for n in NotesPrec]
             Liste_Accords.append(NotesPrec)
         # Encore des notes à ajouter
         else:
@@ -30,8 +31,8 @@ def Enumerate(N,M):
     Add_notes([0],N,M)
     return Liste_Accords
 
-def Normal_Reduction(ListeAccords):
-    ListeAccordsInt = [[(a+[12])[i+1] - (a+[12])[i] for i in range(len(a))] for a in ListeAccords]
+def Normal_Reduction(ListeAccords, M = 12):
+    ListeAccordsInt = [[(a+[M])[i+1] - (a+[M])[i] for i in range(len(a))] for a in ListeAccords]
     ListeNormalFormInt = []
     def Normal_form(a):
         def cyclic_perm(a):
@@ -51,18 +52,15 @@ def Normal_Reduction(ListeAccords):
     ListeNormalForm = [[sum(([0]+a)[:i]) for i in range (1,len(a)+1)] for a in ListeNormalFormInt]
     return ListeNormalForm
 
-def Interval_Reduction(ListeAccords):
+def Interval_Reduction(ListeAccords, M = 12):
     ListeAccordsIntMod = []
-    ListeAccordsMod = [[(a+[12])[i+1] - (a+[12])[i] for i in range(len(a))] for a in ListeAccords]
+    ListeAccordsMod = [[round((a+[M])[i+1] - (a+[M])[i], 2) for i in range(len(a))] for a in ListeAccords]
     for a in ListeAccordsMod:
         a.sort()
         if a not in ListeAccordsIntMod:
             ListeAccordsIntMod.append(a)
     ListeAccordsInt = [[sum(([0]+a)[:i]) for i in range (1,len(a)+1)] for a in ListeAccordsIntMod]
     return ListeAccordsInt
-
-
-
 
 def Make_score(ListeAccords, permute = False, print = 'intervalVector',indStart = 2):
     stream1 = stream.Stream()
@@ -87,14 +85,18 @@ def Make_score(ListeAccords, permute = False, print = 'intervalVector',indStart 
     #         acc.lyric('lyric')
     stream1.show()
 
+
+##################################
+
+
 # ListeAccords = [[4,3,5],[3,]]
 # ListeNormalForm = Normal_Reduction(ListeAccords)
 #
-# ListeAccords = Enumerate(N,M)
+# ListeAccords = Enumerate(3,M)
 # # print(ListeAccords)
 # # ListeNormalForm = Normal_Reduction(ListeAccords)
 # ListeAccordsInt = Interval_Reduction(ListeAccords)
-# Make_score(ListeAccordsInt, False, indStart = 77)
+# Make_score(ListeAccordsInt, permute = False, indStart = 77)
 
 # ListeIntervalVector = []
 # for N in range(1,13):
@@ -215,26 +217,58 @@ def AccordsDeuxiemeNiveau():
 
 
 #######################
-with open('ListeAccordsNiv1.pkl', 'rb') as f:
-    ListeAccordsNiv1 = pickle.load(f)
-ListeAccordsNiv1 = [[sum(([0]+a)[:i]) for i in range (1,len(a)+1)] for a in ListeAccordsNiv1]
+M = 1*12
+norm = 0
+for N in range(1,12+1):
+    ListeAccords = Enumerate(N,M-1)
+    ListePrimeForm = Normal_Reduction(ListeAccords, M = M)
+    norm += len(ListePrimeForm)
 
-Make_score(ListeAccordsNiv1, False, indStart = 1)
+# red = [[((a+[M])[i+1] - (a+[M])[i])*12./M for i in range(len(a))] for a in ListePrimeForm]
+print(norm)
 
 
+
+# compte = 0
+# for N in range(1,12+1):
+#     ListeAccords = Enumerate(N,12-1)
+#     ListeAccordsNorm = Normal_Reduction(ListeAccords)
+#     print('N = {} : {} accords'.format(N,len(ListeAccordsNorm)))
+#     compte += len(ListeAccordsNorm)
+#
+# print('Nombre de classes normales : {}'.format(compte))
+
+# ListeAccords = Enumerate(2,18-1)
+# ListeAccordsInt = Interval_Reduction(ListeAccords)
+# print(ListeAccordsInt)
+#
+#
+# ListeAccords = Enumerate(3,11)
+# ListeAccordsInt = Interval_Reduction(ListeAccords)
+# print(len(ListeAccordsInt))
+
+
+#
+# with open('ListeAccordsNiv1.pkl', 'rb') as f:
+#     ListeAccordsNiv1 = pickle.load(f)
+# ListeAccordsNiv1 = [[sum(([0]+a)[:i]) for i in range (1,len(a)+1)] for a in ListeAccordsNiv1]
+#
+# Make_score(ListeAccordsNiv1, False, indStart = 1)
+#
+#
 # with open('Dic_iv.pkl', 'wb') as f:
 #     pickle.dump(Dic_iv, f)
 # with open('Dic_card.pkl', 'wb') as f:
 #     pickle.dump(Dic_card, f)
 # with open('ListeAccordsNiv2.pkl', 'wb') as f:
 #     pickle.dump(ListeAccordsNiv2, f)
-
-
-
-
+#
+#
+#
+#
 # Make_score(ListeIntervalVector, False, indStart = 1)
-
-
+#
+#
 # ListeIntervalVector = [[(a+[12])[i+1] - (a+[12])[i] for i in range(len(a))] for a in ListeIntervalVector]
 #
 # with open('liste_interval_vectors.pkl', 'wb') as f:

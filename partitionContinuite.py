@@ -180,17 +180,17 @@ class ListeAccords:
             if v.nombreDeNotes>=2:
                 v.SpectreAccord()
                 listeSpectresAccords.append(v.spectreAccord)
-                # v.Context()
-                # v.Roughness()
-                # v.SpectreConcordance()
-                # v.Concordance()
+                v.Context()
+                v.Roughness()
+                v.SpectreConcordance()
+                v.Concordance()
                 v.Harmonicity()
-                # v.CrossConcordance(Prec)
-                # v.HarmonicChange(Prec)
-                # v.HarmonicNovelty(Prec)
-                # v.DiffConcordance(Prec)
-                # v.DiffConcordanceContext(Prec)
-                # v.DiffRoughness(Prec)
+                v.CrossConcordance(Prec)
+                v.HarmonicChange(Prec)
+                v.HarmonicNovelty(Prec)
+                v.DiffConcordance(Prec)
+                v.DiffConcordanceContext(Prec)
+                v.DiffRoughness(Prec)
 
                 # if v.nombreDeNotes>=3:
                 #     # v.ConcordanceOrdre3()
@@ -199,7 +199,7 @@ class ListeAccords:
                 #     v.Tension()
                 #     # v.CrossConcordanceTot(Prec)
 
-            # Prec = v
+            Prec = v
             self.grandeursHarmoniques.append(v)
 
 
@@ -550,7 +550,7 @@ class Accord(ListeAccords):
         n = self.nombreDeNotes
         self.concordanceOrdre3 *= (n**3 / (n *(n-1)*(n-2)/6)) / LA.norm(self.spectreAccord,ord=3)**3
 
-    def Harmonicity(self):
+    def Harmonicity(self):#cas Shepard
         f0 = 261
         # Division du demi-ton en 8e de demi-tons
         freqOct = [f0*2**(i/(12*8)) for i in range(12*8)]
@@ -559,9 +559,6 @@ class Accord(ListeAccords):
             if self.harmonicity < corr:
                 self.harmonicity = corr
         self.harmonicity /= self.energy
-
-
-
 
 
     def ConcordanceOrdre3(self):
@@ -673,7 +670,7 @@ class Accord(ListeAccords):
                     self.context = np.average(np.asarray(listeSpectresAccords), axis=0, weights=[weights[l-1-i] for i in range(l)])
                 else:
                     self.context = np.average(np.asarray(listeSpectresAccords)[(l-1-mem):,:], axis=0, weights=[weights[mem-i] for i in range(mem+1)])
-        self.energyContext = sum(self.spectreAccord * self.spectreAccord)
+        self.energyContext = sum(self.context * self.context)
 
 
     def HarmonicChange(self,Prec):
@@ -939,18 +936,18 @@ spaceDyn = ['harmonicChange','harmonicNovelty','diffRoughness','diffConcordance'
 
 if parametres.one_track:
 
-    title = 'enum_Norm_3'
-    # title = 'CadenceM2'
-    space = ['harmonicity']
+    # title = 'enum_Norm_3'
+    title = 'majeur'
+    space = ['concordance']
     score = converter.parse('/Users/manuel/Github/DescripteursHarmoniques/ExemplesMusicaux/'+title+'.musicxml')
     if os.path.exists('/Users/manuel/Dropbox (TMG)/Thèse/TimbreComparaison/'+title+'-score.png'):
         partition = '/Users/manuel/Dropbox (TMG)/Thèse/TimbreComparaison/'+title+'-score.png'
     else: partition = ''
     l = ListeAccords(score, partition = partition)
     l.HarmonicDescriptors()
-    l.Classement('harmonicity', reverse = True)
-    # l.getAnnotatedStream(space)
-    # l.stream.show()
+    # l.Classement('harmonicity', reverse = True)
+    l.getAnnotatedStream(space)
+    l.stream.show()
     # l.Affichage(space)
     # axe = 'concordance'
     # liste = l.Liste(axe)
