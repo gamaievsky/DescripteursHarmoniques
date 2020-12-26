@@ -1,4 +1,7 @@
 import numpy as np
+import matplotlib as mpl
+import matplotlib.pyplot as plt
+from matplotlib import cm
 from p5 import *
 import p5
 from music21 import *
@@ -13,51 +16,37 @@ import pickle
 from PIL import Image
 import os
 
-
+# Géométrie
 geom = (3,4,7)
-plot_dim, plot_aug, plot_quarte = False, False, False
+
+largeur = 700
+hauteur = 700
+
+# Valeurs par défaut
+plot_dim, plot_aug, plot_quarte = True, True, True
 pitch_liste = ['C','C#','D','Eb','E','F','F#','G','Ab','A','Bb','B']
 timbre = parametres.timbre_def
 K, decr, σ = timbre[0], timbre[1], timbre[2]
 L_mem, decr_mem = parametres.memory_size, parametres.memory_decr_ponderation
-colorR, colorG, colorB = 'diffRoughness','harmonicChange','diffConcordance'
+colorR, colorG, colorB, colorJet  = 'diffRoughness','harmonicChange','diffConcordance','defaut'
 conv_musicxml = ConverterMusicXML()
 
 with open('numSave_Ton.pkl', 'rb') as f:
     numSave_Ton = pickle.load(f)
 
+# Couleurs
+class MplColorHelper:
 
-largeur = 700
-hauteur = 700
+  def __init__(self, cmap_name, start_val, stop_val):
+    self.cmap_name = cmap_name
+    self.cmap = plt.get_cmap(cmap_name)
+    self.norm = mpl.colors.Normalize(vmin=start_val, vmax=stop_val)
+    self.scalarMap = cm.ScalarMappable(norm=self.norm, cmap=self.cmap)
 
-# def setup():
-#     size(largeur, hauteur)
-#     title('Tonnetz [{},{},{}]'.format(geom[0],geom[1],geom[2]))
-#     color_mode('RGBA', 100)
-#
-#     global f,f0,f1
-#     f = create_font("Arial.ttf", 16)
-#     f0 = create_font("Arial.ttf", 14)
-#
-#     global pitch
-#     pitch = Pitch('C#',200,200)
-#
-#     global chord1, chord2, chord3
-#     chord1 = Chord1('C','dim',200,200)
-#     chord2 = Chord1('C','aug',200,200)
-#     chord3 = Chord1('C','quarte',200,200)
-#
-# def draw():
-#     background(255)
-#     pitch.draw()
-#     chord1.draw()
-#     chord2.draw()
-#     chord3.draw()
-#
-# def mouse_pressed():
-#     chord1.click()
-#     chord2.click()
-#     chord3.click()
+  def get_rgb(self, val):
+    return self.scalarMap.to_rgba(val)
+COL = MplColorHelper('jet', 0, 100)
+
 
 
 def setup():
@@ -117,6 +106,11 @@ def mouse_pressed():
         loop()
     # Bouton Save
     if (largeur-90 < mouse_x < 1200) and (0 < mouse_y < 25):
+        stroke(250)
+        fill(250)
+        rect((largeur-90, 0), 90, 25)
+        fill(250)
+        rect((0, 0), 160, 25)
         save(filename='/Users/manuel/Dropbox (TMG)/Thèse/Tonnetz/tonnetz{}.png'.format(numSave_Ton))
         print('file {} saved'.format(numSave_Ton))
         numSave_Ton += 1
@@ -170,16 +164,22 @@ class Chord:
         self.dic_color = {}
 
     def draw(self):
-        var = [colorR,colorG,colorB]
-        for i,col in enumerate(['R','G','B']):
+        var = [colorR,colorG,colorB,colorJet]
+        for i,col in enumerate(['R','G','B','Jet']):
             if var[i] == 'harmonicChange':
                 self.dic_color[col]= self.harmonicChange
             elif var[i] == 'diffConcordance':
                 self.dic_color[col] = self.diffConcordance
             elif var[i] == 'diffRoughness':
                 self.dic_color[col] = self.diffRoughness
+            else: self.dic_color[col] = 0
 
-        fill(self.dic_color['R'], self.dic_color['G'], self.dic_color['B'])
+        if colorJet == 'defaut':
+            fill(self.dic_color['R'], self.dic_color['G'], self.dic_color['B'])
+        else:
+            z = self.dic_color['Jet']
+            fill(100*COL.get_rgb(z)[0],100*COL.get_rgb(z)[1],100*COL.get_rgb(z)[2])
+
         stroke(0)
         stroke_weight(1 + 2*self.selec)
         xt, yt= self.x + (-1)**(self.type == 'minor')*self.d*np.sqrt(3)/2, self.y-self.d/2
@@ -259,16 +259,22 @@ class Chord2:
         self.dic_color = {}
 
     def draw(self):
-        var = [colorR,colorG,colorB]
-        for i,col in enumerate(['R','G','B']):
+        var = [colorR,colorG,colorB,colorJet]
+        for i,col in enumerate(['R','G','B','Jet']):
             if var[i] == 'harmonicChange':
                 self.dic_color[col]= self.harmonicChange
             elif var[i] == 'diffConcordance':
                 self.dic_color[col] = self.diffConcordance
             elif var[i] == 'diffRoughness':
                 self.dic_color[col] = self.diffRoughness
+            else: self.dic_color[col] = 0
 
-        fill(self.dic_color['R'], self.dic_color['G'], self.dic_color['B'])
+        if colorJet == 'defaut':
+            fill(self.dic_color['R'], self.dic_color['G'], self.dic_color['B'])
+        else:
+            z = self.dic_color['Jet']
+            fill(100*COL.get_rgb(z)[0],100*COL.get_rgb(z)[1],100*COL.get_rgb(z)[2])
+
         stroke(0)
 
         if self.type == 'dim':
@@ -455,12 +461,6 @@ class Grid:
                 for i,p in enumerate(self.pitches[col][1:-1]):
                     self.chords_dim.append(Chord2(p,'quarte',self.coord[col][i+1][0], self.coord[col][i+1][1], self.R, self.L))
 
-
-
-
-
-
-
     def CalculDescriptors(self):
         l_harmonicChange = []
         l_diffConcordance = []
@@ -588,7 +588,7 @@ class Grid:
 
 class InterfaceCouleurs(Frame):
 
-    def __init__(self, window, space, row_start, column_start):
+    def __init__(self, window, space, row_start, column_start, spaceNames):
         Frame.__init__(self, window, relief=RIDGE, borderwidth=3)
         self.grid(column = column_start, row = row_start, columnspan = 6, rowspan = len(space) + 1, padx = 50, pady = 10)
 
@@ -599,37 +599,50 @@ class InterfaceCouleurs(Frame):
         self.rouge = Label(self, text = 'Rouge', foreground = 'red')
         self.vert = Label(self, text = 'Vert', foreground = 'green')
         self.bleu = Label(self, text = 'Bleu', foreground = 'blue')
+        self.jet = Label(self, text = 'Arc-en-ciel', foreground = 'black')
         self.rouge.grid(column = column_start + 2, row = row_start)
         self.vert.grid(column = column_start + 3, row = row_start)
         self.bleu.grid(column = column_start + 4, row = row_start)
+        self.jet.grid(column = column_start + 5, row = row_start)
 
         self.varR = StringVar(None, colorR)
         self.varG = StringVar(None, colorG)
         self.varB = StringVar(None, colorB)
+        self.varJet = StringVar(None, colorJet)
 
 
 
         def clickedR():
             print('Rouge : ' + self.varR.get())
+            self.varJet.set('defaut')
         def clickedG():
             print('Vert : ' + self.varG.get())
+            self.varJet.set('defaut')
         def clickedB():
             print('Bleu : ' + self.varG.get())
+            self.varJet.set('defaut')
+        def clickedJet():
+            print('Arc-en-ciel : ' + self.varJet.get())
+            self.varR.set('defaut')
+            self.varG.set('defaut')
+            self.varB.set('defaut')
 
 
         row_count = 1
-        for descr in space:
-            self.lab_descr = Label(self, text = descr[0].upper() + descr[1:])
+        for i,descr in enumerate(space):
+            self.lab_descr = Label(self, text = spaceNames[i])
             self.lab_descr.grid(column = column_start+1, row = row_start + row_count)
 
             self.radR = Radiobutton(self, value=descr, variable=self.varR, command=clickedR)
             self.radG = Radiobutton(self, value=descr, variable=self.varG, command=clickedG)
             self.radB = Radiobutton(self, value=descr, variable=self.varB, command=clickedB)
-
+            self.radJet = Radiobutton(self, value=descr, variable=self.varJet, command=clickedJet)
 
             self.radR.grid(column=column_start + 2, row=row_start + row_count)
             self.radG.grid(column=column_start + 3, row=row_start + row_count)
             self.radB.grid(column=column_start + 4, row=row_start + row_count)
+            self.radJet.grid(column=column_start + 5, row=row_start + row_count)
+
             row_count += 1
 
 
@@ -637,13 +650,13 @@ class InterfaceCouleurs(Frame):
 def Parametres():
     # Création de l'objet fenêtre tk
     window = Tk()
-    window.title("Paramètres")
-    window.geometry('420x500')
-    interface = InterfaceCouleurs(window, ['harmonicChange', 'diffRoughness', 'diffConcordance'], 0, 0)
+    window.title("Paramètres d'affichage")
+    window.geometry('530x500')
+    interface = InterfaceCouleurs(window, ['harmonicChange', 'diffRoughness', 'diffConcordance'], 0, 0, ['Changement harmonique', 'Rugosité différentielle','Concordance différentielle'])
 
     # Types d'accords
     frame_acc = Frame(window, relief=RIDGE, borderwidth=3)
-    frame_acc.grid(column = 0, row = 6, columnspan = 3, rowspan = 4, padx = 70, pady = 10)
+    frame_acc.grid(column = 0+1, row = 6, columnspan = 3, rowspan = 4, padx = 70, pady = 10)
 
     accLab = Label(frame_acc, text = 'Type d\'accords')
     accLab.configure(font= 'Arial 15')
@@ -667,11 +680,9 @@ def Parametres():
     But_quarte.grid(row = 9, column = 2)
 
 
-
-
     # Timbre
     frame_tim = Frame(window, relief=RIDGE, borderwidth=3)
-    frame_tim.grid(column = 0, row = 10, columnspan = 3, rowspan = 4, padx = 70, pady = 10)
+    frame_tim.grid(column = 0+1, row = 10, columnspan = 3, rowspan = 4, padx = 70, pady = 10)
 
     timLab = Label(frame_tim, text = 'Timbre')
     timLab.configure(font= 'Arial 15')
@@ -696,7 +707,7 @@ def Parametres():
 
     # Mémoire
     frame_mem = Frame(window, relief=RIDGE, borderwidth=3)
-    frame_mem.grid(column = 0, row = 14, columnspan = 3, rowspan = 3, padx = 100, pady = 10)
+    frame_mem.grid(column = 0+1, row = 14, columnspan = 3, rowspan = 3, padx = 100, pady = 10)
     memLab = Label(frame_mem, text = 'Mémoire')
     memLab.configure(font= 'Arial 15')
 
@@ -716,7 +727,7 @@ def Parametres():
     # Appliquer
     def clickOk():
         NouvCalc = False
-        global colorR, colorG, colorB, K, decr, σ, L_mem, decr_mem, plot_dim, plot_aug, plot_quarte
+        global colorR, colorG, colorB, colorJet, K, decr, σ, L_mem, decr_mem, plot_dim, plot_aug, plot_quarte
         global grid
 
         if (int(txt_K.get())!=int(K)) or (float(txt_decr.get())!=float(decr)) or (float(txt_σ.get())!=float(σ)) or (int(txt_L.get())!=int(L_mem)) or (float(txt_decrMem.get())!=float(decr_mem)) or (Var_dim.get()!=plot_dim) or (Var_aug.get()!=plot_aug) or (Var_quarte.get()!=plot_quarte):
@@ -725,7 +736,7 @@ def Parametres():
             plot_dim, plot_aug, plot_quarte = Var_dim.get(), Var_aug.get(), Var_quarte.get()
             grid.Fill_chords2()
             # print(g)
-        colorR, colorG, colorB = interface.varR.get(),  interface.varG.get(), interface.varB.get()
+        colorR, colorG, colorB, colorJet = interface.varR.get(),  interface.varG.get(), interface.varB.get(), interface.varJet.get()
         K, decr, σ = int(txt_K.get()),  float(txt_decr.get()), float(txt_σ.get())
         L_mem, decr_mem = int(txt_L.get()),  float(txt_decrMem.get())
         window.withdraw()
@@ -736,7 +747,7 @@ def Parametres():
 
 
     ok = Button(window,text = 'Appliquer',command = clickOk)
-    ok.grid(row = 17, padx=150, pady=10)
+    ok.grid(column = 1, row = 17, padx=150, pady=10)
 
 
     return window

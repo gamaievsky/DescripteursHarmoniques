@@ -131,8 +131,6 @@ class ListeAccords:
         return dic_spectre
 
 
-
-
     def frequenceAvecTemperament(self,pitch1):
 
         """Fonction qui prend en entree un pitch pour renvoyer une frequence, en tenant compte du temperament"""
@@ -711,6 +709,9 @@ def AjoutTimbre(K,decr,σ):
 
     print('\n' + '-----------------------------' + '\nTimbre ({},{},{}) rajouté au dictionnaire'.format(K,decr,σ))
 
+
+
+###############################
 K_choice = [5,7,11,17]
 decr_choice = [0,0.5,1]
 σ_choice = [0.005,0.01]
@@ -720,7 +721,19 @@ decr_choice = [0,0.5,1]
 #         for σ in σ_choice:
 #             AjoutTimbre(K,decr,σ)
 
-for elt in Dic_Harm:
-    print(elt)
-    
+# for elt in Dic_Harm:
+#     print(elt)
+
 # print(Dic_Harm[(11,1/2,0.005)]['concordance'])
+
+###############################
+
+score2 = converter.parse('/Users/manuel/Dropbox (TMG)/Thèse/Estrada/ListeAccordsNiv2-score.musicxml')
+l2 = ListeAccords(score2, instr = (11,0.5,0.005), classe = 'prime')
+l2.HarmonicDescriptors()
+listeDescr = l2.Liste('concordance')
+maxDescr = max(listeDescr)
+listeDescr = [100*float(l)/maxDescr for l in listeDescr]
+
+for e in Dic_id:
+    print(e + ': {}'.format(listeDescr[Dic_id[e]]))
