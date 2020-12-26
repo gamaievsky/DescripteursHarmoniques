@@ -29,7 +29,7 @@ class ListeAccords:
     '''
 
 
-    def __init__(self, stream, instr = parametres.timbre_def, partition = '', classe = None):
+    def __init__(self, stream, instr = parametres.timbre_def, partition = ''):
 
         self.stream = stream
         self.tree = tree.fromStream.asTimespans(stream, flatten=True,classList=(note.Note, chord.Chord))
@@ -157,46 +157,18 @@ class ListeAccords:
             v.ListeHauteursAvecMultiplicite()
             v.NombreDeNotes()
 
-            if self.classe == 'prime':
-                if v.nombreDeNotes>=2:
-                    v.SpectreAccord()
-                    listeSpectresAccords.append(v.spectreAccord)
-                    v.Roughness()
-                    v.SpectreConcordance()
-                    v.Concordance()
-            elif self.classe == 'normal':
-                if v.nombreDeNotes>=2:
-                    v.SpectreAccord()
-                    listeSpectresAccords.append(v.spectreAccord)
-                    v.Harmonicity()
-                    if v.nombreDeNotes>=3:
-                        v.ConcordanceOrdre3()
-                        v.SpectreConcordanceTot()
-                        v.ConcordanceTotale()
-                        v.Tension()
-            else:
-                if v.nombreDeNotes>=2:
-                    v.SpectreAccord()
-                    listeSpectresAccords.append(v.spectreAccord)
-                    # v.Context()
-                    v.Roughness()
-                    v.SpectreConcordance()
-                    v.Concordance()
-                    # v.Harmonicity()
-                    # v.HarmonicChange(Prec)
-                    # v.HarmonicNovelty(Prec)
-                    # v.DiffConcordance(Prec)
-                    # v.DiffConcordanceContext(Prec)
-                    # v.DiffRoughness(Prec)
-
-                    # if v.nombreDeNotes>=3:
-                    #     v.ConcordanceOrdre3()
-                    #     v.SpectreConcordanceTot()
-                    #     v.ConcordanceTotale()
-                    #     v.Tension()
-                #
-                # Prec = v
-
+            if v.nombreDeNotes>=2:
+                v.SpectreAccord()
+                listeSpectresAccords.append(v.spectreAccord)
+                v.Roughness()
+                v.SpectreConcordance()
+                v.Concordance()
+                v.Harmonicity()
+                if v.nombreDeNotes>=3:
+                    v.ConcordanceOrdre3()
+                    v.SpectreConcordanceTot()
+                    v.ConcordanceTotale()
+                    v.Tension()
 
             self.grandeursHarmoniques.append(v)
             print('Accord {}: OK'.format(compte))
@@ -674,16 +646,17 @@ with open('Dic_Harm.pkl', 'rb') as f:
 
 # Fonction qui ajoute un timbre au dictionnaire des valeurs de descripteurs
 def AjoutTimbre(K,decr,σ):
+    space = ['concordance','roughness','harmonicity','concordanceTotale','concordanceOrdre3','tension']
+
     # Classes premières
 
     score1 = converter.parse('/Users/manuel/Dropbox (TMG)/Thèse/Estrada/ListeAccordsNiv1-score.musicxml')
-    l1 = ListeAccords(score1,instr = (K,decr,σ), classe = 'prime')
+    l1 = ListeAccords(score1,instr = (K,decr,σ))
     l1.HarmonicDescriptors()
 
     if (K,decr,σ) not in Dic_Harm:
         Dic_Harm[(K,decr,σ)] = {'K':K,'decr':decr,'σ':σ}
 
-    space1 = ['concordance','roughness']
     for descr in space1:
         listeDescr = l1.Liste(descr)
         maxDescr = max(listeDescr)
@@ -696,7 +669,6 @@ def AjoutTimbre(K,decr,σ):
     l2 = ListeAccords(score2, instr = (K,decr,σ), classe = 'normal')
     l2.HarmonicDescriptors()
 
-    space2 = ['harmonicity','concordanceTotale','concordanceOrdre3','tension']
     for descr in space2:
         listeDescr = l2.Liste(descr)
         maxDescr = max(listeDescr)
