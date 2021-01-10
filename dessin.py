@@ -1,63 +1,126 @@
-# Coïncidence de partiels
-
 from p5 import *
 import pickle
 import numpy as np
 
+# Hexagone
+
 def setup():
-    global tone1, tone2, tone3
-    global f0
-    f0 = create_font("Arial.ttf", 16)
-    size(900, 400)
-    tone1 = Tone('Do',261)
-    # tone2 = Tone('Ré',292)
-    tone2 = Tone('Mi',329)
-    tone3 = Tone('Sol♯', 415)
+    global f
+    f = create_font("Arial.ttf", 20)
+    size(600, 600)
+    global set1,set2
+    set1 = PitchSet([0,4,7,10])
+    set2 = PitchSet([0,5,8],'b')
 
 def draw():
+    global f
     background(255)
-    stroke(0,0,255,75)
-    stroke_weight(2)
-    for f in list(set(tone1.harm) & set(tone2.harm) & set(tone3.harm)):
-        line((70 + f*100/260.0,50), (70 + f*100/260.0,350))
-    for f in list(set(tone1.harm) & set(tone2.harm)):
-        line((70 + f*100/260.0,75), (70 + f*100/260.0,225))
-    for f in list(set(tone1.harm) & set(tone3.harm)):
-        line((70 + f*100/260.0,75), (70 + f*100/260.0,325))
-    for f in list(set(tone2.harm) & set(tone3.harm)):
-        line((70 + f*100/260.0,175), (70 + f*100/260.0,325))
     stroke(0)
-    tone1.draw(100)
-    tone2.draw(200)
-    tone3.draw(300)
+    stroke_weight(2)
+    no_fill()
+    circle((300,300),400)
+
+    set1.draw(inter = True)
+    # set2.draw()
+
+    list_pitches = ['Do','Réb','Ré','Mib','Mi','Fa','Solb','Sol','Lab','La','Sib','Si']
+    # list_pitches = ['0','2','3','4','5','6','7','8','9','10','11','12']
+    for i,pitch in enumerate(list_pitches):
+        fill(0)
+        stroke(0)
+        circle((300 + 200*np.cos(-np.pi/2 + 2*np.pi*i/12.),300 + 200*np.sin(-np.pi/2 + 2*np.pi*i/12.)), 10)
+        text_font(f)
+        text_align("CENTER")
+        text(list_pitches[i],(300 + 230*np.cos(-np.pi/2 + 2*np.pi*i/12.),290 + 230*np.sin(-np.pi/2 + 2*np.pi*i/12.)))
 
 def mouse_pressed():
-    save('/Users/manuel/Dropbox (TMG)/Thèse/Manuscript/schema.png')
-    print('Saved in Manuscript')
+    save(filename='/Users/manuel/Dropbox (TMG)/Thèse/Manuscript/Part3/Images3/rond.png')
 
+class PitchSet:
+    def __init__(self, set, color = 'r'):
+        self.set = set
+        self.color = color
 
-class Tone:
-    def __init__(self, name, freq):
-        self.name = name
-        self.freq = freq
-        self.n = int(7.5*260/freq)
-        self.harm = [(k+1)*self.freq for k in range(self.n)]
-
-    def draw(self, y):
-        text_font(f0)
-        fill(0)
-        text(self.name, (20,y-10))
-        translate(70,y)
-        stroke_weight(1.5)
-        line((0, 0), (750, 0))
-        for f in self.harm:
-            Y = f*100/260.0
-            line((Y,-10), (Y,10))
-        translate(-70,-y)
+    def draw(self, inter = False):
+        stroke_weight(2)
+        if self.color == 'r':stroke(255,0,0)
+        elif self.color == 'b':stroke(0,0,255)
+        for i in range(len(self.set)):
+            line((300 + 200*np.cos(-np.pi/2 + 2*np.pi*(self.set + [self.set[0]])[i]/12.),300 + 200*np.sin(-np.pi/2 + 2*np.pi*(self.set + [self.set[0]])[i]/12.)), (300 + 200*np.cos(-np.pi/2 + 2*np.pi*(self.set + [self.set[0]])[i+1]/12.),300 + 200*np.sin(-np.pi/2 + 2*np.pi*(self.set + [self.set[0]])[i+1]/12.)))
+        if inter:
+            for i in range(len(self.set)-2):
+                for j in range(i+2,len(self.set)):
+                    line((300 + 200*np.cos(-np.pi/2 + 2*np.pi*self.set[i]/12.),300 + 200*np.sin(-np.pi/2 + 2*np.pi*self.set[i]/12.)), (300 + 200*np.cos(-np.pi/2 + 2*np.pi*self.set[j]/12.),300 + 200*np.sin(-np.pi/2 + 2*np.pi*self.set[j]/12.)))
 
 
 if __name__ == '__main__':
     run()
+
+
+
+
+
+##############################
+# Coïncidence de partiels
+
+# from p5 import *
+# import pickle
+# import numpy as np
+#
+# def setup():
+#     global tone1, tone2, tone3
+#     global f0
+#     f0 = create_font("Arial.ttf", 16)
+#     size(900, 400)
+#     tone1 = Tone('Do',261)
+#     # tone2 = Tone('Ré',292)
+#     tone2 = Tone('Mi',329)
+#     tone3 = Tone('Sol♯', 415)
+#
+# def draw():
+#     background(255)
+#     stroke(0,0,255,75)
+#     stroke_weight(2)
+#     for f in list(set(tone1.harm) & set(tone2.harm) & set(tone3.harm)):
+#         line((70 + f*100/260.0,50), (70 + f*100/260.0,350))
+#     for f in list(set(tone1.harm) & set(tone2.harm)):
+#         line((70 + f*100/260.0,75), (70 + f*100/260.0,225))
+#     for f in list(set(tone1.harm) & set(tone3.harm)):
+#         line((70 + f*100/260.0,75), (70 + f*100/260.0,325))
+#     for f in list(set(tone2.harm) & set(tone3.harm)):
+#         line((70 + f*100/260.0,175), (70 + f*100/260.0,325))
+#     stroke(0)
+#     tone1.draw(100)
+#     tone2.draw(200)
+#     tone3.draw(300)
+#
+# def mouse_pressed():
+#     save('/Users/manuel/Dropbox (TMG)/Thèse/Manuscript/schema.png')
+#     print('Saved in Manuscript')
+#
+#
+# class Tone:
+#     def __init__(self, name, freq):
+#         self.name = name
+#         self.freq = freq
+#         self.n = int(7.5*260/freq)
+#         self.harm = [(k+1)*self.freq for k in range(self.n)]
+#
+#     def draw(self, y):
+#         text_font(f0)
+#         fill(0)
+#         text(self.name, (20,y-10))
+#         translate(70,y)
+#         stroke_weight(1.5)
+#         line((0, 0), (750, 0))
+#         for f in self.harm:
+#             Y = f*100/260.0
+#             line((Y,-10), (Y,10))
+#         translate(-70,-y)
+#
+#
+# if __name__ == '__main__':
+#     run()
 
 
 

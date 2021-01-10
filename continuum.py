@@ -352,9 +352,10 @@ interv = np.arange(0,ambitus+ε,ε)
 
 liste_plans_prime = [(1,2,1,-12), (1,1,2,-12), (1,-1,0,0), (0,1,-1,0), (1,0,0,0), (0,1,0,0), (0,0,1,-6)]
 liste_plans_normal = [(2,1,1,-12), (1,2,1,-12), (1,1,2,-12),(1,0,0,0),(0,1,0,0),(0,0,1,0)]
+liste_plans_interm = [(1,2,1,-12), (1,1,2,-12),(1,0,-1,0),(1,0,0,0),(0,1,0,0)]
 
 def Intersection(liste_plans, d):
-    # Fonction qui repère les points d'intersection entre plusieurs plans, de multyiplicité d
+    # Fonction qui repère les points d'intersection entre plusieurs plans, de multiplicité d
     liste_inter3 = []
     for x in interv:
         for y in interv:
@@ -452,13 +453,13 @@ def Prime(ax, form, color = 'k', descr = None, sp = (11,0.5,0.005)):
     ax.plot([acc[0] for acc in l_ordre], [acc[1] for acc in l_ordre], [acc[2] for acc in l_ordre], color = color, linestyle = '-', alpha = 1)
 
     if descr != None:
-        liste_id = ['27-{}'.format(i) for i in range(1,7)]
+        liste_id = ['26-{}'.format(i) for i in range(1,7)]
         liste_acc = [Dic_iv[id] for id in liste_id]
         liste_descr = [Dic_Harm[(sp[0],sp[1],sp[2])][descr][id] for id in liste_id]
         normalize = colors.Normalize(vmin=min(liste_descr), vmax=max(liste_descr))
         ax.scatter([acc[0] for acc in liste_acc],[acc[1] for acc in liste_acc],[acc[2] for acc in liste_acc], c = liste_descr, cmap=cm.jet, norm=normalize, edgecolors='k',alpha = 1.,s=70)
-        cb = fig.colorbar(cm.ScalarMappable(norm=normalize, cmap=cm.jet), ax=ax, orientation = 'horizontal')
-        cb.ax.set_title('Tension')
+        cb = fig.colorbar(cm.ScalarMappable(norm=normalize, cmap=cm.jet), ax=ax, orientation = 'vertical')
+        cb.ax.set_title('Concordance')
     else:
         for acc in l_normal:
             ax.scatter(acc[0],acc[1],acc[2],color = color, alpha = 1)
@@ -466,17 +467,19 @@ def Prime(ax, form, color = 'k', descr = None, sp = (11,0.5,0.005)):
 
 def ContinuumDiscretum(ax, classe = 'prime', discret = False, M = 12, print_classes = False, alpha = 0.3, descr = None):
 
-
-
     # Représentation du volume
     l = Intersection(liste_plans_prime,4)
     ln = Intersection(liste_plans_normal,3)
+    lm = [(0,0,0),(3,3,3),(0,0,6),(0,4,4),(0,6,0),(4,0,4)]
     if classe =='prime':
         fc = ["C0","C1","C2","C4"]
         verts = [[l[0],l[1],l[2]], [l[0],l[2],l[3]], [l[1],l[2],l[3]], [l[0],l[1],l[3]]]
-    else:
+    elif classe == 'normal':
         fc = ["C0","C1","C2","C4","C3","C4"]
         verts = [[ln[1],ln[2],ln[4],ln[5]], [ln[2],ln[4],ln[6],ln[3]], [ln[5],ln[4],ln[6],ln[7]], [ln[0],ln[1],ln[2],ln[3]], [ln[0],ln[1],ln[5],ln[7]], [ln[0],ln[3],ln[6],ln[7]]]
+    else :
+        fc = ["C0","C1","C2","C4","C3"]
+        verts = [[lm[1],lm[5],lm[2],lm[3]], [lm[1],lm[5],lm[0],lm[4]], [lm[0],lm[5],lm[2]], [lm[0],lm[2],lm[3],lm[4]], [lm[1],lm[3],lm[4]]]
     pc = Poly3DCollection(verts, facecolors=fc, linewidths=1, edgecolor = 'k', lw = 0.7,alpha = alpha)
     # ax.plot([acc[0] for acc in l+[l[0],l[1],l[3],l[0],l[2]]], [acc[1] for acc in l+[l[0],l[1],l[3],l[0],l[2]]], [acc[2] for acc in l+[l[0],l[1],l[3],l[0],l[2]]], c='k')
     tri = ax.add_collection3d(pc)
@@ -484,8 +487,8 @@ def ContinuumDiscretum(ax, classe = 'prime', discret = False, M = 12, print_clas
     if discret: DiscreteChords(ax, M = M, classe = classe, descr = descr)
 
     if print_classes:
-        Normal(ax,[1,2,4,5], color = 'b')
-        # Prime(ax,[1,2,4,5], color = 'b', descr = descr)
+        # Normal(ax,[1,2,4,5], color = 'b')
+        Prime(ax,[1,2,3,6], color = 'b', descr = descr)
 
 
     ax.set_xlim(0,ambitus)
@@ -501,12 +504,16 @@ def ContinuumDiscretum(ax, classe = 'prime', discret = False, M = 12, print_clas
 fig = plt.figure(figsize=(11, 7))
 ax = fig.add_subplot(111, projection='3d')
 
-# ContinuumDiscretum(ax, classe = 'prime', alpha = 0.4)
-# ContinuumDiscretum(ax, classe = 'normal', print_classes = False, alpha = 0.3,discret = True, M = 2*12)
-ContinuumDiscretum(ax, classe = 'normal', print_classes = True, alpha = 0.3)
-
+ContinuumDiscretum(ax, classe = 'normal', alpha = 0.1)
+# ContinuumDiscretum(ax, classe = 'normal', alpha = 0.2)
+ContinuumDiscretum(ax, classe = 'interm', alpha = 0.2)
+ContinuumDiscretum(ax, classe = 'prime', print_classes = False, alpha = 0.4, descr = 'concordance')
+points = [(2,3,3),(3,2,3),(3,3,2)]
+for p in points:
+    ax.scatter(p[0],p[1],p[2], alpha = 1)
 
 plt.show()
+
 
 
 #######################

@@ -59,7 +59,6 @@ class ListeAccords:
 
         self.noteDeReferencePourLeTunning = parametres.noteDeReferencePourLeTunning
         self.grandeursHarmoniques = []
-        self.classe = classe
         self.partition = partition
 
 
@@ -156,14 +155,14 @@ class ListeAccords:
 
             v.ListeHauteursAvecMultiplicite()
             v.NombreDeNotes()
+            v.SpectreAccord()
+            listeSpectresAccords.append(v.spectreAccord)
+            v.Harmonicity()
 
             if v.nombreDeNotes>=2:
-                v.SpectreAccord()
-                listeSpectresAccords.append(v.spectreAccord)
                 v.Roughness()
                 v.SpectreConcordance()
                 v.Concordance()
-                v.Harmonicity()
                 if v.nombreDeNotes>=3:
                     v.ConcordanceOrdre3()
                     v.SpectreConcordanceTot()
@@ -542,98 +541,6 @@ class Accord(ListeAccords):
         self.energy = sum(self.spectreAccord * self.spectreAccord)
 
 
-    def Context(self):
-        mem = parametres.memory_size
-
-        if isinstance(mem,int):
-            if parametres.memory_type == 'mean':
-                #Construction du vecteur de pondération
-                weights = [(1/i**parametres.memory_decr_ponderation) for i in range(1,mem+2)]
-                #Moyennage
-                l = len(listeSpectresAccords)
-                if l<=mem:
-                    self.context = np.average(np.asarray(listeSpectresAccords), axis=0, weights=[weights[l-1-i] for i in range(l)])
-                else:
-                    self.context = np.average(np.asarray(listeSpectresAccords)[(l-1-mem):,:], axis=0, weights=[weights[mem-i] for i in range(mem+1)])
-        self.energyContext = sum(self.spectreAccord * self.spectreAccord)
-
-
-    def HarmonicChange(self,Prec):
-        if type(Prec) is int:
-            self.harmonicChange= ""
-        elif parametres.norm_harmChange=='None':
-            if parametres.type_harmChange=='absolute': self.harmonicChange = np.sum(np.abs(self.spectreAccord - Prec.spectreAccord))
-            else: self.harmonicChange = np.sum(self.spectreAccord - Prec.spectreAccord)
-        elif parametres.norm_harmChange=='frame_by_frame':
-            if parametres.type_harmChange=='absolute': self.harmonicChange = np.sum(np.abs(self.spectreAccord/np.sqrt(self.energy) - Prec.spectreAccord/np.sqrt(Prec.energy)))
-            else: self.harmonicChange = np.sum(self.spectreAccord/np.sqrt(self.energy) - self.spectreAccord/np.sqrt(Prec.energy))
-        elif parametres.norm_harmChange=='general':
-            if parametres.type_harmChange=='absolute': self.harmonicChange = np.sum(np.abs((self.spectreAccord - Prec.spectreAccord)/np.power(self.energy * Prec.energy, 1/4)))
-            else: self.harmonicChange = np.sum((self.spectreAccord - Prec.spectreAccord)/np.power(self.energy * Prec.energy, 1/4))
-
-
-    def DiffConcordance(self,Prec):
-        if type(Prec) is int:
-            self.diffConcordance = ""
-        else:
-            for i, pitch1 in enumerate(self.listeHauteursAvecMultiplicite):
-                for j, pitch2 in enumerate(Prec.listeHauteursAvecMultiplicite):
-                    if parametres.norm_diffConc=='energy':
-                        self.diffConcordance = self.diffConcordance + np.divide(np.sum(self.spectre(self.frequenceAvecTemperament(pitch1))*self.spectre(self.frequenceAvecTemperament(pitch2))), np.sqrt(self.energy * Prec.energyContext))
-                    if parametres.norm_diffConc=='energy + conc':
-                        self.diffConcordance = self.diffConcordance + np.divide(np.sum(self.spectre(self.frequenceAvecTemperament(pitch1))*self.spectre(self.frequenceAvecTemperament(pitch2))), np.sqrt(self.energy * Prec.energyC)* self.concordance*Prec.concordance)
-                    if parametres.norm_diffConc=='first':
-                        self.diffConcordance = self.diffConcordance + np.divide(np.sum(self.spectre(self.frequenceAvecTemperament(pitch1))*self.spectre(self.frequenceAvecTemperament(pitch2))), np.sqrt(self.energy * Prec.energy)* Prec.concordance)
-
-
-    def DiffConcordanceContext(self,Prec):
-        if type(Prec) is int:
-            self.diffConcordanceContext = ""
-        else:
-            if parametres.norm_diffConcContext=='energy':
-                self.diffConcordanceContext = np.divide(np.sum(self.spectreAccord*Prec.context), np.sqrt(self.energy * Prec.energy))
-
-    def DiffRoughness(self,Prec):
-        if type(Prec) is int:
-            self.diffRoughness = ""
-        else:
-            for i, pitch1 in enumerate(self.listeHauteursAvecMultiplicite):
-                for j, pitch2 in enumerate(Prec.listeHauteursAvecMultiplicite):
-                    for k1 in range(1,len(self.partiels) + 1):
-                        for k2 in range(1,len(Prec.partiels) + 1):
-                            freq = [Prec.partiels[k2-1] * self.frequenceAvecTemperament(pitch2), self.partiels[k1-1] * self.frequenceAvecTemperament(pitch1)]
-                            freq.sort()
-                            fmin, fmax = freq[0], freq[1]
-                            s = 0.44*(np.log(parametres.β2/parametres.β1)/(parametres.β2-parametres.β1))*(fmax-fmin)/(fmin**(0.477))
-                            diss = np.exp(-parametres.β1*s)-np.exp(-parametres.β2*s)
-                            if parametres.type_diffDiss=='produit':
-                                self.diffRoughness = self.diffRoughness + (self.amplitudes[k1-1] * Prec.amplitudes[k2-1]) * diss
-
-            if parametres.type_diffDiss=='produit':
-                self.diffRoughness = self.diffRoughness/np.sqrt(self.energy * Prec.energy)
-
-            n = self.nombreDeNotes
-            self.diffRoughness = self.diffRoughness/(n*(n - 1)/2)
-
-    def HarmonicNovelty(self,Prec):
-        #Construction de spectreHarmonicNovelty
-        if type(Prec) is int:
-            if parametres.type_harmNov == 'dyn':
-                self.harmonicNovelty = ""
-            else:
-                self.spectreHarmonicNovelty = self.spectreAccord
-                self.harmonicNovelty = np.divide(np.sum(self.spectreHarmonicNovelty * self.spectreHarmonicNovelty), self.energy)
-        else:
-            #Construction de spectreHarmonicNovelty
-            self.spectreHarmonicNovelty = self.spectreAccord - Prec.context
-            for i in range(len(self.spectreAccord)):
-                if self.spectreHarmonicNovelty[i] < 0:
-                    self.spectreHarmonicNovelty[i]=0
-
-            #Calcul de harmonicNovelty
-            self.harmonicNovelty = np.divide(np.sum(self.spectreHarmonicNovelty * self.spectreHarmonicNovelty), self.energy)
-
-
 ################ CALCUL DES DESCRIPTEURS ##################
 
 # Il suffit de rentrer le timbre souhaite dans le fichier paramètres (timbre-def)
@@ -649,31 +556,29 @@ def AjoutTimbre(K,decr,σ):
     space = ['concordance','roughness','harmonicity','concordanceTotale','concordanceOrdre3','tension']
 
     # Classes premières
-
     score1 = converter.parse('/Users/manuel/Dropbox (TMG)/Thèse/Estrada/ListeAccordsNiv1-score.musicxml')
     l1 = ListeAccords(score1,instr = (K,decr,σ))
     l1.HarmonicDescriptors()
+    # Classes normales
+    score2 = converter.parse('/Users/manuel/Dropbox (TMG)/Thèse/Estrada/ListeAccordsNiv2-score.musicxml')
+    l2 = ListeAccords(score2, instr = (K,decr,σ))
+    l2.HarmonicDescriptors()
 
     if (K,decr,σ) not in Dic_Harm:
         Dic_Harm[(K,decr,σ)] = {'K':K,'decr':decr,'σ':σ}
 
-    for descr in space1:
-        listeDescr = l1.Liste(descr)
-        maxDescr = max(listeDescr)
-        listeDescr = [100*float(l)/maxDescr for l in listeDescr]
-        Dic_Harm[(K,decr,σ)][descr] = {id: listeDescr[id-1]  for id in range(1,len(listeDescr)+1)}
-
-    # Classes normales
-
-    score2 = converter.parse('/Users/manuel/Dropbox (TMG)/Thèse/Estrada/ListeAccordsNiv2-score.musicxml')
-    l2 = ListeAccords(score2, instr = (K,decr,σ), classe = 'normal')
-    l2.HarmonicDescriptors()
-
-    for descr in space2:
-        listeDescr = l2.Liste(descr)
-        maxDescr = max(listeDescr)
-        listeDescr = [100*float(l)/maxDescr for l in listeDescr]
-        Dic_Harm[(K,decr,σ)][descr] = {id: listeDescr[Dic_id[id]]  for id in Dic_id}
+    for descr in space:
+        listeDescr_prime = l1.Liste(descr)
+        listeDescr_normal = l2.Liste(descr)
+        maxDescr = max(listeDescr_normal)
+        if maxDescr != 0:
+            listeDescr_prime = [100*float(l)/maxDescr for l in listeDescr_prime]
+            listeDescr_normal = [100*float(l)/maxDescr for l in listeDescr_normal]
+        else:
+            listeDescr_prime = [0 for l in listeDescr_prime]
+            listeDescr_normal = [0 for l in listeDescr_normal]
+        Dic_Harm[(K,decr,σ)][descr+'_prime'] = {id: listeDescr_prime[id-1]  for id in range(1,len(listeDescr_prime)+1)}
+        Dic_Harm[(K,decr,σ)][descr] = {id: listeDescr_normal[Dic_id[id]]  for id in Dic_id}
 
     # Enregistrement du dictionnaire des decripteurs harmoniques
     with open('Dic_Harm.pkl', 'wb') as f:
@@ -684,10 +589,10 @@ def AjoutTimbre(K,decr,σ):
 
 
 ###############################
-K_choice = [5,7,11,17]
-decr_choice = [0,0.5,1]
-σ_choice = [0.005,0.01]
-
+# K_choice = [3,5,7,11,17]
+# decr_choice = [0,0.5,1]
+# σ_choice = [0.001]
+#
 # for K in K_choice:
 #     for decr in decr_choice:
 #         for σ in σ_choice:
@@ -695,17 +600,21 @@ decr_choice = [0,0.5,1]
 
 # for elt in Dic_Harm:
 #     print(elt)
-
-# print(Dic_Harm[(11,1/2,0.005)]['concordance'])
+#
+# for elm in Dic_Harm:
+#     print(elm)
 
 ###############################
 
-score2 = converter.parse('/Users/manuel/Dropbox (TMG)/Thèse/Estrada/ListeAccordsNiv2-score.musicxml')
-l2 = ListeAccords(score2, instr = (11,0.5,0.005), classe = 'prime')
-l2.HarmonicDescriptors()
-listeDescr = l2.Liste('concordance')
-maxDescr = max(listeDescr)
-listeDescr = [100*float(l)/maxDescr for l in listeDescr]
+# score2 = converter.parse('/Users/manuel/Dropbox (TMG)/Thèse/Estrada/ListeAccordsNiv2-score.musicxml')
+# l2 = ListeAccords(score2, instr = (11,0.5,0.005), classe = 'prime')
+# l2.HarmonicDescriptors()
+# listeDescr = l2.Liste('concordance')
+# maxDescr = max(listeDescr)
+# listeDescr = [100*float(l)/maxDescr for l in listeDescr]
+#
+# for e in Dic_id:
+#     print(e + ': {}'.format(listeDescr[Dic_id[e]]))
 
-for e in Dic_id:
-    print(e + ': {}'.format(listeDescr[Dic_id[e]]))
+###############################
+# AjoutTimbre(10,1/2,0.005)

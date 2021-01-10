@@ -217,15 +217,15 @@ def AccordsDeuxiemeNiveau():
 
 
 #######################
-M = 1*12
-norm = 0
-for N in range(1,12+1):
-    ListeAccords = Enumerate(N,M-1)
-    ListePrimeForm = Normal_Reduction(ListeAccords, M = M)
-    norm += len(ListePrimeForm)
+# M = 1*12
+# norm = 0
+# for N in range(1,12+1):
+#     ListeAccords = Enumerate(N,M-1)
+#     ListePrimeForm = Normal_Reduction(ListeAccords, M = M)
+#     norm += len(ListePrimeForm)
 
 # red = [[((a+[M])[i+1] - (a+[M])[i])*12./M for i in range(len(a))] for a in ListePrimeForm]
-print(norm)
+
 
 
 
