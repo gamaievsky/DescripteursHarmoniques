@@ -25,9 +25,9 @@ hauteur = 700
 # Valeurs par défaut
 plot_dim, plot_aug, plot_quarte = True, True, True
 pitch_liste = ['C','C#','D','Eb','E','F','F#','G','Ab','A','Bb','B']
-timbre = (11,1/2,0.005)
+timbre = parametres.timbre_def
 K, decr, σ = timbre[0], timbre[1], timbre[2]
-L_mem, decr_mem = 0, 1
+L_mem, decr_mem = parametres.memory_size, parametres.memory_decr_ponderation
 colorR, colorG, colorB, colorJet  = 'diffRoughness','harmonicChange','diffConcordance','defaut'
 conv_musicxml = ConverterMusicXML()
 
