@@ -177,27 +177,27 @@ class ListeAccords:
             v.ListeHauteursAvecMultiplicite()
             v.NombreDeNotes()
 
-            if v.nombreDeNotes>=2:
+            if v.nombreDeNotes>=1:
                 v.SpectreAccord()
                 listeSpectresAccords.append(v.spectreAccord)
                 v.Context()
-                v.Roughness()
-                v.SpectreConcordance()
-                v.Concordance()
-                v.Harmonicity()
-                v.CrossConcordance(Prec)
+                # v.Roughness()
+                # v.SpectreConcordance()
+                # v.Concordance()
+                # v.Harmonicity()
+                # v.CrossConcordance(Prec)
                 v.HarmonicChange(Prec)
-                v.HarmonicNovelty(Prec)
+                # v.HarmonicNovelty(Prec)
                 v.DiffConcordance(Prec)
                 v.DiffConcordanceContext(Prec)
-                v.DiffRoughness(Prec)
+                # v.DiffRoughness(Prec)
 
-                # if v.nombreDeNotes>=3:
-                #     # v.ConcordanceOrdre3()
-                #     # v.SpectreConcordanceTot()
-                #     # v.ConcordanceTotale()
-                #     v.Tension()
-                #     # v.CrossConcordanceTot(Prec)
+                if v.nombreDeNotes>=3:
+                    # v.ConcordanceOrdre3()
+                    v.SpectreConcordanceTot()
+                    v.ConcordanceTotale()
+                    # v.Tension()
+                    # v.CrossConcordanceTot(Prec)
 
             Prec = v
             self.grandeursHarmoniques.append(v)
@@ -219,6 +219,7 @@ class ListeAccords:
             if m != 0:
                 pass
                 liste[j] = [(100/m)*val for val in liste[j]]
+        print(liste)
         for gH in self.grandeursHarmoniques:
             if gH.verticality.bassTimespan != None :
                 element = gH.verticality.bassTimespan.element
@@ -228,10 +229,10 @@ class ListeAccords:
                 for d, descr in enumerate(space):
                     if dataString != '': dataString + " "
                     #Descripteurs différentiels
-                    if descr in ['crossConcordance','crossConcordanceTot','difBaryConc','difBaryConcTot']:
+                    if descr in ['harmonicChange', 'diffConcordanceContext']:
                         if type(getattr(gH,descr)) != str:
                             # dataString = dataString + "-" + str(round(liste[d][i],8))
-                            dataString = dataString + "-" + str(int(liste[d][i]))
+                            dataString = dataString + "-" + str(int(liste[d][i-1]))
 
                     #Descripteurs statiques
                     else:
@@ -730,6 +731,25 @@ class Accord(ListeAccords):
             n = self.nombreDeNotes
             self.diffRoughness = self.diffRoughness/(n*(n - 1)/2)
 
+    # def DiffRoughnessContext(self,Prec):
+    #     def rough(f0,f1):
+    #         s = 0.24/(0.021*f0 + 19)
+    #         return np.exp(-parametres.β1*s*(f1-f0))-np.exp(-parametres.β2*s*(f1-f0))
+    #     if type(Prec) is int:
+    #         self.diffRoughnessContext = ""
+    #     else:
+    #         dic1, dic2 = self.spectreAccord_pic, Prec.context_pic
+    #         for f1 in dic1:
+    #             for f2 in dic2:
+    #                 freq = [f1,f2]
+    #                 freq.sort()
+    #                 fmin, fmax = freq[0], freq[1]
+    #                 self.diffRoughnessContext += (dic1[f1] * dic2[f2]) * rough(fmin,fmax)
+    #
+    #         self.diffRoughnessContext = self.diffRoughnessContext/np.sqrt(self.energy * Prec.energyContext)
+
+
+
     def HarmonicNovelty(self,Prec):
         #Construction de spectreHarmonicNovelty
         if type(Prec) is int:
@@ -937,9 +957,10 @@ spaceDyn = ['harmonicChange','harmonicNovelty','diffRoughness','diffConcordance'
 if parametres.one_track:
 
     # title = 'enum_Norm_3'
-    title = 'majeur'
-    space = ['concordance']
-    score = converter.parse('/Users/manuel/Github/DescripteursHarmoniques/ExemplesMusicaux/'+title+'.musicxml')
+    title = 'Test 1 note'
+    # space = ['roughness','harmonicity']
+    space = ['diffConcordance']
+    score = converter.parse('/Users/manuel/Dropbox (TMG)/Thèse/TimbreComparaison/test1note.musicxml')
     if os.path.exists('/Users/manuel/Dropbox (TMG)/Thèse/TimbreComparaison/'+title+'-score.png'):
         partition = '/Users/manuel/Dropbox (TMG)/Thèse/TimbreComparaison/'+title+'-score.png'
     else: partition = ''

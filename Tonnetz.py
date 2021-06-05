@@ -28,7 +28,7 @@ plot_dim, plot_aug, plot_quarte = True, True, True
 pitch_liste = ['C','C#','D','Eb','E','F','F#','G','Ab','A','Bb','B']
 timbre = (11,0.5,0.005)
 K, decr, σ = timbre[0], timbre[1], timbre[2]
-L_mem, decr_mem = 4, 0.5
+L_mem, decr_mem = 3, 0.5
 colorR, colorG, colorB, colorJet  = 'diffRoughness','harmonicChange','diffConcordance','defaut'
 conv_musicxml = ConverterMusicXML()
 

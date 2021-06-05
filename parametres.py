@@ -8,7 +8,7 @@ noteDeReferencePourLeTunning = "C4"
 
 # Spectre
 timbre_def = (11,1/2,0.005)
-shepard = False
+shepard = True
 
 #PARAMETRES DES DESCRIPTEURS
 #Dissonance
@@ -32,7 +32,7 @@ type_diffDiss = 'produit'
 type_harmNov = 'dyn' #'dyn', 'stat'
 
 ## CONTEXTE ET MEMOIRE
-memory_size = 2 # "full", int # entier n>=1, auquel cas la mémoire ne dure que n+1 accords
+memory_size = 0 # "full", int # entier n>=1, auquel cas la mémoire ne dure que n+1 accords
 memory_type = 'mean' #'max','mean'
 memory_decr_ponderation = 1
 norm_Novelty = 'energy' # 'None', 'energy'
@@ -44,7 +44,7 @@ plot_descr = True
 plot_abstr = False
 
 aff_score = True
-link = True
+link = False
 color_abstr = 'b'
 
 ## COMPARAISON DE TIMBRES ET DES DESCRIPTEURS

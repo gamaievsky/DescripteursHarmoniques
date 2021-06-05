@@ -8,9 +8,11 @@ def setup():
     global f
     f = create_font("Arial.ttf", 20)
     size(600, 600)
-    global set1,set2
-    set1 = PitchSet([0,4,7,10])
-    set2 = PitchSet([0,5,8],'b')
+    global set1,set2,set3
+    set1 = PitchSet([2,4,8,9],'r')
+    set2 = PitchSet([0,1,3,7],'b')
+    # set3 = PitchSet([0,4,7,10],'g')
+
 
 def draw():
     global f
@@ -20,11 +22,12 @@ def draw():
     no_fill()
     circle((300,300),400)
 
-    set1.draw(inter = True)
-    # set2.draw()
+    set1.draw()
+    set2.draw()
+    # set3.draw()
 
     list_pitches = ['Do','Réb','Ré','Mib','Mi','Fa','Solb','Sol','Lab','La','Sib','Si']
-    # list_pitches = ['0','2','3','4','5','6','7','8','9','10','11','12']
+    # list_pitches = ['0','1','2','3','4','5','6','7','8','9','10','11']
     for i,pitch in enumerate(list_pitches):
         fill(0)
         stroke(0)
@@ -34,7 +37,7 @@ def draw():
         text(list_pitches[i],(300 + 230*np.cos(-np.pi/2 + 2*np.pi*i/12.),290 + 230*np.sin(-np.pi/2 + 2*np.pi*i/12.)))
 
 def mouse_pressed():
-    save(filename='/Users/manuel/Dropbox (TMG)/Thèse/Manuscript/Part3/Images3/rond.png')
+    save(filename='/Users/manuel/Dropbox (TMG)/Thèse/Csound/Prem1.png')
 
 class PitchSet:
     def __init__(self, set, color = 'r'):
@@ -45,6 +48,7 @@ class PitchSet:
         stroke_weight(2)
         if self.color == 'r':stroke(255,0,0)
         elif self.color == 'b':stroke(0,0,255)
+        elif self.color == 'g':stroke(0,200,0)
         for i in range(len(self.set)):
             line((300 + 200*np.cos(-np.pi/2 + 2*np.pi*(self.set + [self.set[0]])[i]/12.),300 + 200*np.sin(-np.pi/2 + 2*np.pi*(self.set + [self.set[0]])[i]/12.)), (300 + 200*np.cos(-np.pi/2 + 2*np.pi*(self.set + [self.set[0]])[i+1]/12.),300 + 200*np.sin(-np.pi/2 + 2*np.pi*(self.set + [self.set[0]])[i+1]/12.)))
         if inter:

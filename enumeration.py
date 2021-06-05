@@ -228,7 +228,7 @@ def AccordsDeuxiemeNiveau():
 
 
 
-
+##################### Compter les identités pour une subdivision donnée
 # compte = 0
 # for N in range(1,12+1):
 #     ListeAccords = Enumerate(N,12-1)
@@ -237,6 +237,19 @@ def AccordsDeuxiemeNiveau():
 #     compte += len(ListeAccordsNorm)
 #
 # print('Nombre de classes normales : {}'.format(compte))
+
+print('\n-----------------------------------\n')
+
+compteId = 0
+M = 24
+for N in range(1,M+1):
+    ListeAccords = Enumerate(N,M-1)
+    ListeAccordsId = Interval_Reduction(ListeAccords,M=M)
+    print('N = {} : {} accords'.format(N,len(ListeAccordsId)))
+    compteId += len(ListeAccordsId)
+
+print('Nombre d\'identités : {}'.format(compteId))
+print('\n-----------------------------------\n')
 
 # ListeAccords = Enumerate(2,18-1)
 # ListeAccordsInt = Interval_Reduction(ListeAccords)

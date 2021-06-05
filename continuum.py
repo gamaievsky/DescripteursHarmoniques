@@ -69,7 +69,7 @@ def shiftedColorMap(cmap, start=0, midpoint=0.5, stop=1.0, name='shiftedcmap'):
 
 #PARAMETRES
 shepard = True
-timbre_def = (11,0.5,0.005)
+timbre_def = (5,1,0.03)
 K = timbre_def[0]
 decr = timbre_def[1]
 σ = timbre_def[2]
@@ -132,7 +132,7 @@ def spectre(f0, K = K, decr = decr, σ = σ, shepard = shepard, Σ = Σ, plot = 
         else:
             plt.xscale('log',basex = 2)
             plt.plot(freq, E*max_val, ls = '--')
-            plt.plot(freq, S, label = 'Pitch-class La')
+            plt.plot(freq, S, label = 'Hauteur La')
             plt.xlabel('Frequence (Hz)')
             plt.ylabel('Amplitude')
             plt.title('Spectre de Shepard' + '\nK : {}, σ : {}, decr : {}, Σ : {}'.format(K,σ,decr,Σ))
@@ -153,7 +153,7 @@ def spectre(f0, K = K, decr = decr, σ = σ, shepard = shepard, Σ = Σ, plot = 
         else:
             plt.xscale('log',basex = 2)
             plt.plot(freq, E*max_val, ls = '--')
-            plt.vlines([f for f in dic_spectre],0,[dic_spectre[fp] for fp in dic_spectre], label = 'Pitch-class La')
+            plt.vlines([f for f in dic_spectre],0,[dic_spectre[fp] for fp in dic_spectre], label = 'Hauteur La')
             plt.xlabel('Frequence (Hz)')
             plt.ylabel('Amplitude')
             plt.title('Spectre de Shepard en pics' + '\nK : {}, decr : {}, Σ : {}'.format(K,decr,Σ))
@@ -341,186 +341,186 @@ def Carte(param, ambitus = 12, f0 = 261, K = K, decr = decr, σ = σ, shepard = 
 
 # Classes des accords à 4 sons
 
-with open('Dic_iv.pkl', 'rb') as f:
-    Dic_iv = pickle.load(f)
-with open('Dic_Harm.pkl', 'rb') as f:
-    Dic_Harm = pickle.load(f)
-
-ambitus = 6
-ε = 0.1
-interv = np.arange(0,ambitus+ε,ε)
-
-liste_plans_prime = [(1,2,1,-12), (1,1,2,-12), (1,-1,0,0), (0,1,-1,0), (1,0,0,0), (0,1,0,0), (0,0,1,-6)]
-liste_plans_normal = [(2,1,1,-12), (1,2,1,-12), (1,1,2,-12),(1,0,0,0),(0,1,0,0),(0,0,1,0)]
-liste_plans_interm = [(1,2,1,-12), (1,1,2,-12),(1,0,-1,0),(1,0,0,0),(0,1,0,0)]
-
-def Intersection(liste_plans, d):
-    # Fonction qui repère les points d'intersection entre plusieurs plans, de multiplicité d
-    liste_inter3 = []
-    for x in interv:
-        for y in interv:
-            for z in interv:
-                num = 0
-                for plan in liste_plans:
-                    if (plan[0]*x + plan[1]*y + plan[2]*z + plan[3] ==0):
-                        num+=1
-                if num >= d:
-                    liste_inter3.append((x,y,z))
-    return liste_inter3
-
-def Plane(ax,a,b,c,d):
-    # Fonction qui trace un plan
-    if c != 0:
-        xx, yy = np.meshgrid(interv, interv)
-        zz = (-a * xx - b * yy - d) * 1. /c
-    else:
-        yy,zz = np.meshgrid(interv, interv)
-        xx = (- b * yy - d) * 1. /a
-    ax.plot_surface(xx,yy,zz,alpha=0.3)
-
-def DiscreteChords(ax, M = 12, N=4, classe = 'prime', descr = None, sp = (11,0.5,0.005)):
-    # Fonction qui trace toutes les classes premières ou normales dans une subdivision M donnée
-    if classe == 'prime':
-        liste_acc = Interval_Reduction(Enumerate(N,M-1),M)
-    else:
-        liste_acc = Normal_Reduction(Enumerate(N,M-1),M)
-    liste_acc_red = [[((a+[M])[i+1] - (a+[M])[i])*12./M for i in range(len(a))] for a in liste_acc]
-    if descr != None:
-        liste_descr = [Dic_Harm[(sp[0],sp[1],sp[2])][descr][num] for num in range(20,35)]
-        normalize = colors.Normalize(vmin=min(liste_descr), vmax=max(liste_descr))
-        ax.scatter([acc[0] for acc in liste_acc_red],[acc[1] for acc in liste_acc_red],[acc[2] for acc in liste_acc_red], c = liste_descr, cmap=cm.jet, norm=normalize, edgecolors='k',alpha = 1.,s=70)
-        # cb = fig.colorbar(cm.ScalarMappable(norm=normalize, cmap=cm.jet), ax=ax, orientation = 'horizontal')
-        # cb.ax.set_title('Concordance')
-    else:
-        for acc in liste_acc_red:
-            ax.scatter(acc[0],acc[1],acc[2], color = 'k')
-
-def Traverse(p0,p1,plan, plot = False, ax = None, color = 'k'):
-    # Point d'intersection entre une droite et un plan (si tout va bien...)
-    if plan[2]!=0:
-        a = np.array([[plan[0],plan[1],plan[2]], [p1[2]-p0[2], 0, -(p1[0]-p0[0])], [0, p1[2]-p0[2], -(p1[1]-p0[1])]])
-        b = np.array([-plan[3], p0[0]*p1[2] - p0[2]*p1[0], p0[1]*p1[2] - p0[2]*p1[1]])
-    else:
-        a = np.array([[plan[0],plan[1],plan[2]], [-(p1[1]-p0[1]), p1[0]-p0[0], 0], [-(p1[2]-p0[2]), 0, p1[0]-p0[0]]])
-        b = np.array([-plan[3], p0[1]*p1[0] - p0[0]*p1[1], p0[2]*p1[0] - p0[0]*p1[2]])
-
-    sol = np.linalg.solve(a, b)
-    if plot:
-        ax.scatter(sol[0],sol[1],sol[2],marker = '*',color = color, alpha = 1)
-    return sol
-
-
-def Normal(ax, form, color = 'k'):
-    def cyclic_perm(a):
-        n = len(a)
-        b = [[a[i - j] for i in range(n)] for j in range(n)]
-        return b
-    l = cyclic_perm(form)
-    p = liste_plans_normal
-    liste_off = []
-    # Tracer les points
-    for acc in l:
-        if (acc[0]*p[0][0] + acc[1]*p[0][1] + (acc[2]+p[0][3])*p[0][2] <= 0) and (acc[0]*p[1][0] + acc[1]*p[1][1] + (acc[2]+p[1][3])*p[1][2] <= 0) and (acc[0]*p[2][0] + acc[1]*p[2][1] + (acc[2]+p[2][3])*p[2][2] <= 0):
-            ax.scatter(acc[0],acc[1],acc[2],color=color,marker = 'o',alpha = 0.7)
-            acc_in = acc
-        else :
-            ax.scatter(acc[0],acc[1],acc[2],color=color)
-            liste_off.append(acc)
-    # tracer les lignes
-    if len(liste_off)>0:
-        liste_off.sort(reverse = True)
-        for i,acc_off in enumerate(liste_off):
-            inters = Traverse(acc_in,acc_off,liste_plans_normal[i], plot = True, ax = ax, color = color)
-            ax.plot([acc_in[0], inters[0]], [acc_in[1], inters[1]], [acc_in[2], inters[2]], linestyle=':', color = color, alpha = 0.7)
-            ax.plot([acc_off[0], inters[0]], [acc_off[1], inters[1]], [acc_off[2], inters[2]], linestyle='-', color = color)
-
-        ax.plot([acc[0] for acc in liste_off+[liste_off[0]]], [acc[1] for acc in liste_off+[liste_off[0]]], [acc[2] for acc in liste_off+[liste_off[0]]], linestyle = '-',color = color)
-
-
-def Prime(ax, form, color = 'k', descr = None, sp = (11,0.5,0.005)):
-    l_normal = list(itertools.permutations([form[0], form[1], form[2]]))
-    acc_in = form
-    for acc_off in [l_normal[2]]:#, l_normal[4], l_normal[5]]:
-        inters = Traverse(acc_in, acc_off, (1,-1,0,0), plot = True, ax = ax, color = color)
-        ax.plot([acc_in[0], inters[0]], [acc_in[1], inters[1]], [acc_in[2], inters[2]], linestyle=':', color = color, alpha = 0.7)
-        ax.plot([acc_off[0], inters[0]], [acc_off[1], inters[1]], [acc_off[2], inters[2]], linestyle='-', color = color)
-    for acc_off in [l_normal[1]]:#, l_normal[3]]:
-        inters = Traverse(acc_in, acc_off, (0,1,-1,0), plot = True, ax = ax, color = color)
-        ax.plot([acc_in[0], inters[0]], [acc_in[1], inters[1]], [acc_in[2], inters[2]], linestyle=':', color = color, alpha = 0.7)
-        ax.plot([acc_off[0], inters[0]], [acc_off[1], inters[1]], [acc_off[2], inters[2]], linestyle='-', color = color)
-
-    l_ordre = [l_normal[1],l_normal[3],l_normal[5],l_normal[4],l_normal[2]]
-    ax.plot([acc[0] for acc in l_ordre], [acc[1] for acc in l_ordre], [acc[2] for acc in l_ordre], color = color, linestyle = '-', alpha = 1)
-
-    if descr != None:
-        liste_id = ['26-{}'.format(i) for i in range(1,7)]
-        liste_acc = [Dic_iv[id] for id in liste_id]
-        liste_descr = [Dic_Harm[(sp[0],sp[1],sp[2])][descr][id] for id in liste_id]
-        normalize = colors.Normalize(vmin=min(liste_descr), vmax=max(liste_descr))
-        ax.scatter([acc[0] for acc in liste_acc],[acc[1] for acc in liste_acc],[acc[2] for acc in liste_acc], c = liste_descr, cmap=cm.jet, norm=normalize, edgecolors='k',alpha = 1.,s=70)
-        cb = fig.colorbar(cm.ScalarMappable(norm=normalize, cmap=cm.jet), ax=ax, orientation = 'vertical')
-        cb.ax.set_title('Concordance')
-    else:
-        for acc in l_normal:
-            ax.scatter(acc[0],acc[1],acc[2],color = color, alpha = 1)
-
-
-def ContinuumDiscretum(ax, classe = 'prime', discret = False, M = 12, print_classes = False, alpha = 0.3, descr = None):
-
-    # Représentation du volume
-    l = Intersection(liste_plans_prime,4)
-    ln = Intersection(liste_plans_normal,3)
-    lm = [(0,0,0),(3,3,3),(0,0,6),(0,4,4),(0,6,0),(4,0,4)]
-    if classe =='prime':
-        fc = ["C0","C1","C2","C4"]
-        verts = [[l[0],l[1],l[2]], [l[0],l[2],l[3]], [l[1],l[2],l[3]], [l[0],l[1],l[3]]]
-    elif classe == 'normal':
-        fc = ["C0","C1","C2","C4","C3","C4"]
-        verts = [[ln[1],ln[2],ln[4],ln[5]], [ln[2],ln[4],ln[6],ln[3]], [ln[5],ln[4],ln[6],ln[7]], [ln[0],ln[1],ln[2],ln[3]], [ln[0],ln[1],ln[5],ln[7]], [ln[0],ln[3],ln[6],ln[7]]]
-    else :
-        fc = ["C0","C1","C2","C4","C3"]
-        verts = [[lm[1],lm[5],lm[2],lm[3]], [lm[1],lm[5],lm[0],lm[4]], [lm[0],lm[5],lm[2]], [lm[0],lm[2],lm[3],lm[4]], [lm[1],lm[3],lm[4]]]
-    pc = Poly3DCollection(verts, facecolors=fc, linewidths=1, edgecolor = 'k', lw = 0.7,alpha = alpha)
-    # ax.plot([acc[0] for acc in l+[l[0],l[1],l[3],l[0],l[2]]], [acc[1] for acc in l+[l[0],l[1],l[3],l[0],l[2]]], [acc[2] for acc in l+[l[0],l[1],l[3],l[0],l[2]]], c='k')
-    tri = ax.add_collection3d(pc)
-
-    if discret: DiscreteChords(ax, M = M, classe = classe, descr = descr)
-
-    if print_classes:
-        # Normal(ax,[1,2,4,5], color = 'b')
-        Prime(ax,[1,2,3,6], color = 'b', descr = descr)
-
-
-    ax.set_xlim(0,ambitus)
-    ax.set_ylim(ambitus,0)
-    ax.set_zlim(0,ambitus)
-    plt.xlabel('Intervalle inférieur')
-    plt.ylabel('Intervalle médian')
-    ax.set_zlabel('Intervalle supérieur')
-    # ax.zaxis.set_visible(False)
-    # plt.title(param[0].upper() + param[1:] + ' des triades'+'\nK : {}, σ : {}, decr : {}'.format(K,σ,decr))
-
-
-fig = plt.figure(figsize=(11, 7))
-ax = fig.add_subplot(111, projection='3d')
-
-ContinuumDiscretum(ax, classe = 'normal', alpha = 0.1)
-# ContinuumDiscretum(ax, classe = 'normal', alpha = 0.2)
-ContinuumDiscretum(ax, classe = 'interm', alpha = 0.2)
-ContinuumDiscretum(ax, classe = 'prime', print_classes = False, alpha = 0.4, descr = 'concordance')
-points = [(2,3,3),(3,2,3),(3,3,2)]
-for p in points:
-    ax.scatter(p[0],p[1],p[2], alpha = 1)
-
-plt.show()
+# with open('Dic_iv.pkl', 'rb') as f:
+#     Dic_iv = pickle.load(f)
+# with open('Dic_Harm.pkl', 'rb') as f:
+#     Dic_Harm = pickle.load(f)
+#
+# ambitus = 6
+# ε = 0.1
+# interv = np.arange(0,ambitus+ε,ε)
+#
+# liste_plans_prime = [(1,2,1,-12), (1,1,2,-12), (1,-1,0,0), (0,1,-1,0), (1,0,0,0), (0,1,0,0), (0,0,1,-6)]
+# liste_plans_normal = [(2,1,1,-12), (1,2,1,-12), (1,1,2,-12),(1,0,0,0),(0,1,0,0),(0,0,1,0)]
+# liste_plans_interm = [(1,2,1,-12), (1,1,2,-12),(1,0,-1,0),(1,0,0,0),(0,1,0,0)]
+#
+# def Intersection(liste_plans, d):
+#     # Fonction qui repère les points d'intersection entre plusieurs plans, de multiplicité d
+#     liste_inter3 = []
+#     for x in interv:
+#         for y in interv:
+#             for z in interv:
+#                 num = 0
+#                 for plan in liste_plans:
+#                     if (plan[0]*x + plan[1]*y + plan[2]*z + plan[3] ==0):
+#                         num+=1
+#                 if num >= d:
+#                     liste_inter3.append((x,y,z))
+#     return liste_inter3
+#
+# def Plane(ax,a,b,c,d):
+#     # Fonction qui trace un plan
+#     if c != 0:
+#         xx, yy = np.meshgrid(interv, interv)
+#         zz = (-a * xx - b * yy - d) * 1. /c
+#     else:
+#         yy,zz = np.meshgrid(interv, interv)
+#         xx = (- b * yy - d) * 1. /a
+#     ax.plot_surface(xx,yy,zz,alpha=0.3)
+#
+# def DiscreteChords(ax, M = 12, N=4, classe = 'prime', descr = None, sp = (11,0.5,0.005)):
+#     # Fonction qui trace toutes les classes premières ou normales dans une subdivision M donnée
+#     if classe == 'prime':
+#         liste_acc = Interval_Reduction(Enumerate(N,M-1),M)
+#     else:
+#         liste_acc = Normal_Reduction(Enumerate(N,M-1),M)
+#     liste_acc_red = [[((a+[M])[i+1] - (a+[M])[i])*12./M for i in range(len(a))] for a in liste_acc]
+#     if descr != None:
+#         liste_descr = [Dic_Harm[(sp[0],sp[1],sp[2])][descr][num] for num in range(20,35)]
+#         normalize = colors.Normalize(vmin=min(liste_descr), vmax=max(liste_descr))
+#         ax.scatter([acc[0] for acc in liste_acc_red],[acc[1] for acc in liste_acc_red],[acc[2] for acc in liste_acc_red], c = liste_descr, cmap=cm.jet, norm=normalize, edgecolors='k',alpha = 1.,s=70)
+#         # cb = fig.colorbar(cm.ScalarMappable(norm=normalize, cmap=cm.jet), ax=ax, orientation = 'horizontal')
+#         # cb.ax.set_title('Concordance')
+#     else:
+#         for acc in liste_acc_red:
+#             ax.scatter(acc[0],acc[1],acc[2], color = 'k')
+#
+# def Traverse(p0,p1,plan, plot = False, ax = None, color = 'k'):
+#     # Point d'intersection entre une droite et un plan (si tout va bien...)
+#     if plan[2]!=0:
+#         a = np.array([[plan[0],plan[1],plan[2]], [p1[2]-p0[2], 0, -(p1[0]-p0[0])], [0, p1[2]-p0[2], -(p1[1]-p0[1])]])
+#         b = np.array([-plan[3], p0[0]*p1[2] - p0[2]*p1[0], p0[1]*p1[2] - p0[2]*p1[1]])
+#     else:
+#         a = np.array([[plan[0],plan[1],plan[2]], [-(p1[1]-p0[1]), p1[0]-p0[0], 0], [-(p1[2]-p0[2]), 0, p1[0]-p0[0]]])
+#         b = np.array([-plan[3], p0[1]*p1[0] - p0[0]*p1[1], p0[2]*p1[0] - p0[0]*p1[2]])
+#
+#     sol = np.linalg.solve(a, b)
+#     if plot:
+#         ax.scatter(sol[0],sol[1],sol[2],marker = '*',color = color, alpha = 1)
+#     return sol
+#
+#
+# def Normal(ax, form, color = 'k'):
+#     def cyclic_perm(a):
+#         n = len(a)
+#         b = [[a[i - j] for i in range(n)] for j in range(n)]
+#         return b
+#     l = cyclic_perm(form)
+#     p = liste_plans_normal
+#     liste_off = []
+#     # Tracer les points
+#     for acc in l:
+#         if (acc[0]*p[0][0] + acc[1]*p[0][1] + (acc[2]+p[0][3])*p[0][2] <= 0) and (acc[0]*p[1][0] + acc[1]*p[1][1] + (acc[2]+p[1][3])*p[1][2] <= 0) and (acc[0]*p[2][0] + acc[1]*p[2][1] + (acc[2]+p[2][3])*p[2][2] <= 0):
+#             ax.scatter(acc[0],acc[1],acc[2],color=color,marker = 'o',alpha = 0.7)
+#             acc_in = acc
+#         else :
+#             ax.scatter(acc[0],acc[1],acc[2],color=color)
+#             liste_off.append(acc)
+#     # tracer les lignes
+#     if len(liste_off)>0:
+#         liste_off.sort(reverse = True)
+#         for i,acc_off in enumerate(liste_off):
+#             inters = Traverse(acc_in,acc_off,liste_plans_normal[i], plot = True, ax = ax, color = color)
+#             ax.plot([acc_in[0], inters[0]], [acc_in[1], inters[1]], [acc_in[2], inters[2]], linestyle=':', color = color, alpha = 0.7)
+#             ax.plot([acc_off[0], inters[0]], [acc_off[1], inters[1]], [acc_off[2], inters[2]], linestyle='-', color = color)
+#
+#         ax.plot([acc[0] for acc in liste_off+[liste_off[0]]], [acc[1] for acc in liste_off+[liste_off[0]]], [acc[2] for acc in liste_off+[liste_off[0]]], linestyle = '-',color = color)
+#
+#
+# def Prime(ax, form, color = 'k', descr = None, sp = (11,0.5,0.005)):
+#     l_normal = list(itertools.permutations([form[0], form[1], form[2]]))
+#     acc_in = form
+#     for acc_off in [l_normal[2]]:#, l_normal[4], l_normal[5]]:
+#         inters = Traverse(acc_in, acc_off, (1,-1,0,0), plot = True, ax = ax, color = color)
+#         ax.plot([acc_in[0], inters[0]], [acc_in[1], inters[1]], [acc_in[2], inters[2]], linestyle=':', color = color, alpha = 0.7)
+#         ax.plot([acc_off[0], inters[0]], [acc_off[1], inters[1]], [acc_off[2], inters[2]], linestyle='-', color = color)
+#     for acc_off in [l_normal[1]]:#, l_normal[3]]:
+#         inters = Traverse(acc_in, acc_off, (0,1,-1,0), plot = True, ax = ax, color = color)
+#         ax.plot([acc_in[0], inters[0]], [acc_in[1], inters[1]], [acc_in[2], inters[2]], linestyle=':', color = color, alpha = 0.7)
+#         ax.plot([acc_off[0], inters[0]], [acc_off[1], inters[1]], [acc_off[2], inters[2]], linestyle='-', color = color)
+#
+#     l_ordre = [l_normal[1],l_normal[3],l_normal[5],l_normal[4],l_normal[2]]
+#     ax.plot([acc[0] for acc in l_ordre], [acc[1] for acc in l_ordre], [acc[2] for acc in l_ordre], color = color, linestyle = '-', alpha = 1)
+#
+#     if descr != None:
+#         liste_id = ['26-{}'.format(i) for i in range(1,7)]
+#         liste_acc = [Dic_iv[id] for id in liste_id]
+#         liste_descr = [Dic_Harm[(sp[0],sp[1],sp[2])][descr][id] for id in liste_id]
+#         normalize = colors.Normalize(vmin=min(liste_descr), vmax=max(liste_descr))
+#         ax.scatter([acc[0] for acc in liste_acc],[acc[1] for acc in liste_acc],[acc[2] for acc in liste_acc], c = liste_descr, cmap=cm.jet, norm=normalize, edgecolors='k',alpha = 1.,s=70)
+#         cb = fig.colorbar(cm.ScalarMappable(norm=normalize, cmap=cm.jet), ax=ax, orientation = 'vertical')
+#         cb.ax.set_title('Concordance')
+#     else:
+#         for acc in l_normal:
+#             ax.scatter(acc[0],acc[1],acc[2],color = color, alpha = 1)
+#
+#
+# def ContinuumDiscretum(ax, classe = 'prime', discret = False, M = 12, print_classes = False, alpha = 0.3, descr = None):
+#
+#     # Représentation du volume
+#     l = Intersection(liste_plans_prime,4)
+#     ln = Intersection(liste_plans_normal,3)
+#     lm = [(0,0,0),(3,3,3),(0,0,6),(0,4,4),(0,6,0),(4,0,4)]
+#     if classe =='prime':
+#         fc = ["C0","C1","C2","C4"]
+#         verts = [[l[0],l[1],l[2]], [l[0],l[2],l[3]], [l[1],l[2],l[3]], [l[0],l[1],l[3]]]
+#     elif classe == 'normal':
+#         fc = ["C0","C1","C2","C4","C3","C4"]
+#         verts = [[ln[1],ln[2],ln[4],ln[5]], [ln[2],ln[4],ln[6],ln[3]], [ln[5],ln[4],ln[6],ln[7]], [ln[0],ln[1],ln[2],ln[3]], [ln[0],ln[1],ln[5],ln[7]], [ln[0],ln[3],ln[6],ln[7]]]
+#     else :
+#         fc = ["C0","C1","C2","C4","C3"]
+#         verts = [[lm[1],lm[5],lm[2],lm[3]], [lm[1],lm[5],lm[0],lm[4]], [lm[0],lm[5],lm[2]], [lm[0],lm[2],lm[3],lm[4]], [lm[1],lm[3],lm[4]]]
+#     pc = Poly3DCollection(verts, facecolors=fc, linewidths=1, edgecolor = 'k', lw = 0.7,alpha = alpha)
+#     # ax.plot([acc[0] for acc in l+[l[0],l[1],l[3],l[0],l[2]]], [acc[1] for acc in l+[l[0],l[1],l[3],l[0],l[2]]], [acc[2] for acc in l+[l[0],l[1],l[3],l[0],l[2]]], c='k')
+#     tri = ax.add_collection3d(pc)
+#
+#     if discret: DiscreteChords(ax, M = M, classe = classe, descr = descr)
+#
+#     if print_classes:
+#         # Normal(ax,[1,2,4,5], color = 'b')
+#         Prime(ax,[1,2,3,6], color = 'b', descr = descr)
+#
+#
+#     ax.set_xlim(0,ambitus)
+#     ax.set_ylim(ambitus,0)
+#     ax.set_zlim(0,ambitus)
+#     plt.xlabel('Intervalle inférieur')
+#     plt.ylabel('Intervalle médian')
+#     ax.set_zlabel('Intervalle supérieur')
+#     # ax.zaxis.set_visible(False)
+#     # plt.title(param[0].upper() + param[1:] + ' des triades'+'\nK : {}, σ : {}, decr : {}'.format(K,σ,decr))
+#
+#
+# fig = plt.figure(figsize=(11, 7))
+# ax = fig.add_subplot(111, projection='3d')
+#
+# ContinuumDiscretum(ax, classe = 'normal', alpha = 0.1)
+# # ContinuumDiscretum(ax, classe = 'normal', alpha = 0.2)
+# ContinuumDiscretum(ax, classe = 'interm', alpha = 0.2)
+# ContinuumDiscretum(ax, classe = 'prime', print_classes = False, alpha = 0.4, descr = 'concordance')
+# points = [(2,3,3),(3,2,3),(3,3,2)]
+# for p in points:
+#     ax.scatter(p[0],p[1],p[2], alpha = 1)
+#
+# plt.show()
 
 
 
 #######################
 # Affichage du spectre
 
-# f0 = 440
-# S = spectre(f0, plot_pics = True)
+f0 = 440
+S = spectre(f0, plot_pics = True)
 #######################
 
 # Carte des classes premières et normales
