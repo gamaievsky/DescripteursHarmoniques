@@ -18,7 +18,6 @@ import os
 
 # Géométrie
 geom = (3,4,7)
-# geom = (1,4,5)
 
 largeur = 700
 hauteur = 700
@@ -26,9 +25,13 @@ hauteur = 700
 # Valeurs par défaut
 plot_dim, plot_aug, plot_quarte = True, True, True
 pitch_liste = ['C','C#','D','Eb','E','F','F#','G','Ab','A','Bb','B']
-timbre = (11,0.5,0.005)
+timbre = parametres.timbre_def
 K, decr, σ = timbre[0], timbre[1], timbre[2]
+<<<<<<< HEAD
 L_mem, decr_mem = 3, 0.5
+=======
+L_mem, decr_mem = parametres.memory_size, parametres.memory_decr_ponderation
+>>>>>>> parent of e9b3fbf (Classes d'accords : c'est fini !)
 colorR, colorG, colorB, colorJet  = 'diffRoughness','harmonicChange','diffConcordance','defaut'
 conv_musicxml = ConverterMusicXML()
 
@@ -84,17 +87,17 @@ def draw():
         image(image_score, (200, 10), (α*h,h))
 
     # Légende des descripteurs totalisés
-    # if len(tot_harmonicChange)>=2:
-    #     text_font(f0)
-    #     fill(0)
-    #     text_align("CENTER")
-    #     p5.text('Somme sur les transitions : HarmonicChange : {}, DiffConcordance = {}, DiffRoughness : {}'.format(int(np.sum(tot_harmonicChange[1:])), int(np.sum(tot_diffConcordance[1:])), int(np.sum(tot_diffRoughness[1:]))),(largeur/2,hauteur-70))
+    if len(tot_harmonicChange)>=2:
+        text_font(f0)
+        fill(0)
+        text_align("CENTER")
+        p5.text('Somme sur les transitions : HarmonicChange : {}, DiffConcordance = {}, DiffRoughness : {}'.format(int(np.sum(tot_harmonicChange[1:])), int(np.sum(tot_diffConcordance[1:])), int(np.sum(tot_diffRoughness[1:]))),(largeur/2,hauteur-70))
 
     # Légende
     text_font(f0)
     fill(50)
     text_align("CENTER")
-    p5.text('Tonnetz [{},{},{}]'.format(geom[0],geom[1],geom[2]) + ', timbre ({},{},{})'.format(K, decr, σ) + ', mémoire ({} acc, decr: {})'.format(L_mem, decr_mem),(largeur/2,hauteur-30))
+    p5.text('Tonnetz [{},{},{}]'.format(geom[0],geom[1],geom[2]) + ', timbre (K: {}, decr: {}, σ: {})'.format(K, decr, σ) + ', mémoire ({} acc, decr: {})'.format(L_mem + 1, decr_mem),(largeur/2,hauteur-30))
 
 def mouse_pressed():
     global numSave_Ton
@@ -485,7 +488,7 @@ class Grid:
                 dic_descr[tuple_ind] = len(l_harmonicChange)
                 ch.stream = copy.deepcopy(stream1)
                 ch.stream.append(chord.Chord([mod(ch.pitches[0].pitch), mod(ch.pitches[1].pitch), mod(ch.pitches[2].pitch)]))
-                l = ListeAccords(ch.stream, instr = (K,decr,σ), memory_size = L_mem - 1, memory_decr_ponderation = decr_mem)
+                l = ListeAccords(ch.stream, instr = (K,decr,σ), memory_size = L_mem, memory_decr_ponderation = decr_mem)
                 l.HarmonicDescriptors()
                 l_harmonicChange.append(l.Liste('harmonicChange')[-1])
                 l_diffConcordance.append(l.Liste('diffConcordanceContext')[-1])
@@ -502,7 +505,7 @@ class Grid:
                 dic_descr[tuple(sorted(ch2.pitches))] = len(l_harmonicChange)
                 ch2.stream = copy.deepcopy(stream1)
                 ch2.stream.append(chord.Chord([mod(ch2.pitches[0]), mod(ch2.pitches[1]), mod(ch2.pitches[2])]))
-                l = ListeAccords(ch2.stream, instr = (K,decr,σ), memory_size = L_mem - 1, memory_decr_ponderation = decr_mem)
+                l = ListeAccords(ch2.stream, instr = (K,decr,σ), memory_size = L_mem, memory_decr_ponderation = decr_mem)
                 l.HarmonicDescriptors()
                 l_harmonicChange.append(l.Liste('harmonicChange')[-1])
                 l_diffConcordance.append(l.Liste('diffConcordanceContext')[-1])
@@ -690,8 +693,8 @@ def Parametres():
     timLab.configure(font= 'Arial 15')
 
     Lab_K = Label(frame_tim, text = 'Nombre de partiels')
-    Lab_decr = Label(frame_tim, text = 'Décroissance')
-    Lab_σ = Label(frame_tim, text = 'Largeur σ')
+    Lab_decr = Label(frame_tim, text = 'décroissance')
+    Lab_σ = Label(frame_tim, text = 'facteur σ')
     txt_K = Entry(frame_tim, width=10)
     txt_decr = Entry(frame_tim, width=10)
     txt_σ = Entry(frame_tim, width=10)
@@ -714,7 +717,7 @@ def Parametres():
     memLab.configure(font= 'Arial 15')
 
     Lab_L= Label(frame_mem, text = 'Longueur')
-    Lab_decrMem = Label(frame_mem, text = 'Décroissance')
+    Lab_decrMem = Label(frame_mem, text = 'décroissance')
     txt_L = Entry(frame_mem, width=10)
     txt_decrMem = Entry(frame_mem, width=10)
     txt_L.insert(0, L_mem)
